@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: inote
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  ai:
+    alibaba:
+      api-key: ${ALI_API_KEY:your-api-key-here}
+      base-url: https://dashscope.aliyuncs.com/api/v1
+      chat:
+        options:
+          model: qwen3-max
+          temperature: 0.7
+          max-tokens: 2000
+
+    vectorstore:
+      milvus:
+        host: ${MILVUS_HOST:localhost}
+        port: ${MILVUS_PORT:19530}
+        database-name: default
+        collection-name: inote_documents
+        embedding-dimension: 1536
+        index-type: IVF_FLAT
+        metric-type: COSINE
+        initialize-schema: true
+
+# 备选模型配置
+ai:
+  fallback:
+    model: kimi-2.5
+    api-key: ${KIMI_API_KEY:your-kimi-api-key-here}
+    base-url: https://api.moonshot.cn/v1
+
+# 文件上传配置
+file:
+  upload:
+    path: ./uploads
+    max-size: 50MB
+
+# 日志配置
+logging:
+  level:
+    com.inote: DEBUG
+    org.springframework.ai: DEBUG
