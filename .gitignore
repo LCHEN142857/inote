@@ -8,6 +8,10 @@ bin-release/
 .settings/
 
 # Executables
+.idea
+.claude
+target
+uploads
 *.swf
 *.air
 *.ipa
@@ -16,3 +20,6 @@ bin-release/
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
+
+# 本地配置文件（包含敏感密钥，禁止提交）
+src/main/resources/application-local.yml

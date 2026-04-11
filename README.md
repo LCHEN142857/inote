@@ -135,8 +135,9 @@ inote/
 ```yaml
 spring:
   ai:
-    alibaba:
-      api-key: ${ALI_API_KEY}  # 阿里云 DashScope API Key
+    openai:
+      api-key: ${ALI_API_KEY}  # 阿里云 DashScope API Key（OpenAI 兼容模式）
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
     vectorstore:
       milvus:
         host: ${MILVUS_HOST:localhost}
