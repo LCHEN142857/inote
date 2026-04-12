@@ -5,6 +5,7 @@ package com.inote.service;
 import com.inote.model.entity.Document;
 // 导入文档仓库
 import com.inote.repository.DocumentRepository;
+import com.inote.service.retrieval.BM25SearchService;
 // 导入文档解析工具类
 import com.inote.util.DocumentParser;
 // 导入 Lombok 构造函数注解
@@ -44,12 +45,10 @@ import java.util.UUID;
 // 文档处理服务，负责文档解析、分块和向量化的异步处理
 public class DocumentProcessingService {
 
-    // 注入文档解析器，支持多种格式解析
     private final DocumentParser documentParser;
-    // 注入嵌入服务，用于文本向量化和存储
     private final EmbeddingService embeddingService;
-    // 注入文档仓库，用于更新文档处理状态
     private final DocumentRepository documentRepository;
+    private final BM25SearchService bm25SearchService;
 
     // 文本分块大小，每块最多 1000 个字符
     private static final int CHUNK_SIZE = 1000;
@@ -97,7 +96,23 @@ public class DocumentProcessingService {
             // 4. 向量化并存入 Milvus：将文本块转为向量并存储
             embeddingService.embedAndStore(chunks, metadata);
 
-            // 5. 更新文档状态为"完成"
+            // 5. 同步 BM25 索引：为混合检索准备关键词索引
+            // BM25 索引失败不应影响文档处理成功状态，仅记录警告日志
+            try {
+                List<org.springframework.ai.document.Document> aiDocuments = chunks.stream()
+                        .map(chunk -> {
+                            Map<String, Object> docMeta = new HashMap<>(metadata);
+                            docMeta.put("chunk_size", chunk.length());
+                            return new org.springframework.ai.document.Document(chunk, docMeta);
+                        })
+                        .toList();
+                bm25SearchService.indexDocuments(aiDocuments);
+            } catch (Exception e) {
+                log.warn("BM25 indexing failed for document {}: {}", document.getId(), e.getMessage());
+                // BM25 索引失败不影响整体文档处理流程
+            }
+
+            // 6. 更新文档状态为"完成"
             document.setStatus("COMPLETED");
             // 将状态更新保存到仓库
             documentRepository.save(document);

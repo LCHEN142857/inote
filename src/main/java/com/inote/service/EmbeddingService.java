@@ -83,24 +83,26 @@ public class EmbeddingService {
      * @return 按相似度排序的文档列表
      */
     public List<Document> searchSimilarDocuments(String query, int topK) {
-        // 记录搜索日志
-        log.debug("Searching similar documents for query: {}", query);
+        return searchSimilarDocuments(query, topK, 0.0);
+    }
 
-        // 构建向量搜索请求
-        SearchRequest searchRequest = SearchRequest.builder()
-                // 设置查询文本（内部会自动向量化）
+    public List<Document> searchSimilarDocuments(String query, int topK, double similarityThreshold) {
+        log.debug("Searching similar documents for query: {}, topK: {}, threshold: {}",
+                query, topK, similarityThreshold);
+
+        SearchRequest.Builder builder = SearchRequest.builder()
                 .query(query)
-                // 设置返回的最大文档数量
-                .topK(topK)
-                // 构建搜索请求对象
-                .build();
+                .topK(topK);
 
-        // 在 Milvus 中执行向量相似度搜索
+        if (similarityThreshold > 0.0) {
+            builder.similarityThreshold(similarityThreshold);
+        }
+
+        SearchRequest searchRequest = builder.build();
+
         List<Document> results = vectorStore.similaritySearch(searchRequest);
-        // 记录搜索结果数量
         log.debug("Found {} similar documents", results.size());
 
-        // 返回相似文档列表
         return results;
     }
 

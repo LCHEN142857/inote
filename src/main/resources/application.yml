@@ -41,6 +41,10 @@ spring:
         options:
           # 文本嵌入模型名称，使用 DashScope 的 text-embedding-v2 模型，输出 1536 维向量
           model: text-embedding-v2
+    dashscope:
+      # DashScope 专用 API 密钥（用于重排序等 DashScope 特有服务）
+      # 默认使用 openai.api-key 的值，如需单独配置请取消注释并设置
+      # api-key: ${DASHSCOPE_API_KEY:${ALI_API_KEY:your-api-key-here}}
 
     # ======================== 向量存储（Milvus）配置 ========================
     vectorstore:
@@ -72,6 +76,26 @@ ai:
     api-key: ${KIMI_API_KEY:your-kimi-api-key-here}
     # Kimi（月之暗面）API 地址
     base-url: https://api.moonshot.cn/v1
+
+# ======================== RAG 检索管线配置 ========================
+rag:
+  # 查询重写：LLM 将口语化查询改写为专业检索语句
+  query-rewrite-enabled: false
+  # 多查询分解：将复杂查询拆分为多个子查询
+  multi-query-enabled: false
+  max-sub-queries: 3
+  # 混合检索：向量检索 + BM25 关键词检索
+  hybrid-search-enabled: false
+  vector-top-k: 10
+  bm25-top-k: 10
+  similarity-threshold: 0.5
+  rrf-k: 60.0
+  # 重排序：DashScope gte-rerank 模型
+  rerank-enabled: false
+  rerank-model: gte-rerank
+  rerank-top-n: 3
+  # 默认检索数量
+  final-top-k: 3
 
 # ======================== 文件上传配置 ========================
 file:
