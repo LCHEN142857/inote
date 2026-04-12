@@ -12,12 +12,12 @@ import org.springframework.beans.factory.annotation.Value;
 // 导入 Bean 定义注解
 import org.springframework.context.annotation.Bean;
 // 导入配置类注解
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-// 导入主要 Bean 标记注解
 import org.springframework.context.annotation.Primary;
 
-// 标注为 Spring 配置类，内部的 @Bean 方法会注册到 Spring 容器
 @Configuration
+@EnableConfigurationProperties(RagProperties.class)
 // AI 模型配置类，配置主模型和备选模型
 public class AiConfig {
 
