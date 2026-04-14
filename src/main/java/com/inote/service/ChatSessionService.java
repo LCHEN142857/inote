@@ -16,6 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,11 +38,14 @@ public class ChatSessionService {
 
     @Transactional(readOnly = true)
     public List<ChatSessionSummaryResponse> listSessions() {
-        return chatSessionRepository.findAllByOrderByUpdatedAtDesc().stream()
+        List<ChatSession> sessions = chatSessionRepository.findAllByOrderByUpdatedAtDesc();
+        Map<String, Long> messageCounts = loadMessageCounts(sessions);
+
+        return sessions.stream()
                 .map(session -> ChatSessionSummaryResponse.builder()
                         .id(session.getId())
                         .title(session.getTitle())
-                        .messageCount(chatMessageRepository.countBySessionId(session.getId()))
+                        .messageCount(messageCounts.getOrDefault(session.getId(), 0L))
                         .createdAt(session.getCreatedAt())
                         .updatedAt(session.getUpdatedAt())
                         .build())
@@ -77,6 +83,21 @@ public class ChatSessionService {
     @Transactional
     public void touchSession(ChatSession session) {
         chatSessionRepository.save(session);
+    }
+
+    private Map<String, Long> loadMessageCounts(List<ChatSession> sessions) {
+        List<String> sessionIds = sessions.stream()
+                .map(ChatSession::getId)
+                .toList();
+        if (sessionIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return chatMessageRepository.countBySessionIds(sessionIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (String) row[0],
+                        row -> (Long) row[1]
+                ));
     }
 
     private ChatSessionResponse toResponse(ChatSession session, List<ChatMessage> messages) {

@@ -8,21 +8,26 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "documents")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Document {
 
     @Id
+    @EqualsAndHashCode.Include
     @Column(length = 36, nullable = false, updatable = false)
     private String id;
 

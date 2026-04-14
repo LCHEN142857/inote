@@ -57,9 +57,14 @@ public class DocumentController {
     @GetMapping("/files/{filename:.+}")
     public ResponseEntity<Resource> getFile(@PathVariable String filename) {
         try {
-            Path filePath = Paths.get(uploadPath).resolve(filename).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
+            Path uploadRoot = Paths.get(uploadPath).toAbsolutePath().normalize();
+            Path filePath = uploadRoot.resolve(filename).normalize();
+            if (!filePath.startsWith(uploadRoot)) {
+                log.warn("Blocked file access outside upload directory: {}", filename);
+                return ResponseEntity.badRequest().build();
+            }
 
+            Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists() && resource.isReadable()) {
                 return ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")

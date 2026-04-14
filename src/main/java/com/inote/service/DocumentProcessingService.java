@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +88,9 @@ public class DocumentProcessingService {
 
         Path targetPath = Paths.get(uploadPath, newFileName);
         Files.createDirectories(targetPath.getParent());
-        Files.copy(file.getInputStream(), targetPath);
+        try (InputStream inputStream = file.getInputStream()) {
+            Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        }
         return targetPath;
     }
 
