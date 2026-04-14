@@ -15,6 +15,9 @@ const QUICK_PROMPTS = [
   "提取文档中的时间线和责任人"
 ];
 
+const PINNED_SESSIONS_KEY = "inote-pinned-sessions";
+const ACTIVE_DOCUMENT_STATUSES = new Set(["PENDING", "PARSING", "PROCESSING"]);
+
 function formatTime(value?: string) {
   if (!value) return "";
   return new Intl.DateTimeFormat("zh-CN", {
@@ -31,88 +34,185 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+function renderInline(text: string) {
+  const segments = text.split(
+    /(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\((https?:\/\/[^\s)]+)\)|\*[^*]+\*|~~[^~]+~~)/g
+  );
+
+  return segments.filter(Boolean).map((segment, index) => {
+    if (segment.startsWith("`") && segment.endsWith("`")) {
+      return <code key={`${segment}-${index}`}>{segment.slice(1, -1)}</code>;
+    }
+
+    if (segment.startsWith("**") && segment.endsWith("**")) {
+      return <strong key={`${segment}-${index}`}>{segment.slice(2, -2)}</strong>;
+    }
+
+    if (segment.startsWith("*") && segment.endsWith("*")) {
+      return <em key={`${segment}-${index}`}>{segment.slice(1, -1)}</em>;
+    }
+
+    if (segment.startsWith("~~") && segment.endsWith("~~")) {
+      return <del key={`${segment}-${index}`}>{segment.slice(2, -2)}</del>;
+    }
+
+    const linkMatch = segment.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (linkMatch) {
+      return (
+        <a
+          key={`${segment}-${index}`}
+          className="inline-link"
+          href={linkMatch[2]}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {linkMatch[1]}
+        </a>
+      );
+    }
+
+    return <Fragment key={`${segment}-${index}`}>{segment}</Fragment>;
+  });
 }
 
-function renderInline(text: string) {
-  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g).filter(Boolean);
+function renderParagraph(lines: string[]) {
+  return (
+    <p>
+      {lines.map((line, index) => (
+        <Fragment key={`${line}-${index}`}>
+          {index > 0 ? <br /> : null}
+          {renderInline(line)}
+        </Fragment>
+      ))}
+    </p>
+  );
+}
 
-  return tokens.map((token, index) => {
-    if (token.startsWith("`") && token.endsWith("`")) {
-      return <code key={`${token}-${index}`}>{token.slice(1, -1)}</code>;
-    }
+function renderTable(lines: string[], key: string) {
+  const rows = lines
+    .map((line) =>
+      line
+        .trim()
+        .replace(/^\|/, "")
+        .replace(/\|$/, "")
+        .split("|")
+        .map((cell) => cell.trim())
+    )
+    .filter((cells) => cells.length > 1);
 
-    if (token.startsWith("**") && token.endsWith("**")) {
-      return <strong key={`${token}-${index}`}>{token.slice(2, -2)}</strong>;
-    }
+  if (rows.length < 2) {
+    return renderParagraph(lines);
+  }
 
-    return <Fragment key={`${token}-${index}`}>{token}</Fragment>;
-  });
+  const [header, divider, ...body] = rows;
+  const looksLikeDivider = divider.every((cell) => /^:?-{2,}:?$/.test(cell));
+  if (!looksLikeDivider) {
+    return renderParagraph(lines);
+  }
+
+  return (
+    <div className="table-wrap" key={key}>
+      <table className="message-table">
+        <thead>
+          <tr>
+            {header.map((cell, index) => (
+              <th key={`head-${index}`}>{renderInline(cell)}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {body.map((row, rowIndex) => (
+            <tr key={`row-${rowIndex}`}>
+              {row.map((cell, cellIndex) => (
+                <td key={`cell-${rowIndex}-${cellIndex}`}>{renderInline(cell)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function renderRichText(content: string) {
   const blocks = content.split(/```/g);
 
-  return blocks.map((block, index) => {
-    if (index % 2 === 1) {
+  return blocks.map((block, blockIndex) => {
+    if (blockIndex % 2 === 1) {
       const [firstLine, ...restLines] = block.split("\n");
       const language = firstLine.trim();
       const code = restLines.join("\n").trimEnd();
 
       return (
-        <pre key={`code-${index}`} className="code-block">
+        <pre key={`code-${blockIndex}`} className="code-block">
           {language ? <span className="code-language">{language}</span> : null}
           <code>{code}</code>
         </pre>
       );
     }
 
+    const sections = block
+      .split(/\n{2,}/)
+      .map((section) => section.trim())
+      .filter(Boolean);
+
     return (
-      <Fragment key={`text-${index}`}>
-        {block
-          .split(/\n{2,}/)
-          .map((section) => section.trim())
-          .filter(Boolean)
-          .map((section, sectionIndex) => {
-            const lines = section.split("\n").map((line) => line.trimEnd());
-            const bulletLines = lines.filter((line) => /^[-*]\s+/.test(line));
-            const orderedLines = lines.filter((line) => /^\d+\.\s+/.test(line));
+      <Fragment key={`text-${blockIndex}`}>
+        {sections.map((section, sectionIndex) => {
+          const lines = section.split("\n").map((line) => line.trimEnd());
 
-            if (bulletLines.length === lines.length) {
-              return (
-                <ul key={`ul-${index}-${sectionIndex}`}>
-                  {bulletLines.map((line, lineIndex) => (
-                    <li key={`li-${lineIndex}`}>{renderInline(line.replace(/^[-*]\s+/, ""))}</li>
-                  ))}
-                </ul>
-              );
-            }
-
-            if (orderedLines.length === lines.length) {
-              return (
-                <ol key={`ol-${index}-${sectionIndex}`}>
-                  {orderedLines.map((line, lineIndex) => (
-                    <li key={`li-${lineIndex}`}>{renderInline(line.replace(/^\d+\.\s+/, ""))}</li>
-                  ))}
-                </ol>
-              );
-            }
-
+          if (lines.every((line) => line.startsWith("> "))) {
             return (
-              <p key={`p-${index}-${sectionIndex}`}>
-                {lines.map((line, lineIndex) => (
-                  <Fragment key={`line-${lineIndex}`}>
-                    {lineIndex > 0 ? <br /> : null}
-                    {renderInline(line)}
+              <blockquote key={`quote-${blockIndex}-${sectionIndex}`}>
+                {lines.map((line, index) => (
+                  <Fragment key={`quote-line-${index}`}>
+                    {index > 0 ? <br /> : null}
+                    {renderInline(line.replace(/^>\s/, ""))}
                   </Fragment>
                 ))}
-              </p>
+              </blockquote>
             );
-          })}
+          }
+
+          const titleMatch = lines.length === 1 ? lines[0].match(/^(#{1,3})\s+(.+)$/) : null;
+          if (titleMatch) {
+            const level = titleMatch[1].length;
+            const text = titleMatch[2];
+            if (level === 1) return <h1 key={`h1-${blockIndex}-${sectionIndex}`}>{renderInline(text)}</h1>;
+            if (level === 2) return <h2 key={`h2-${blockIndex}-${sectionIndex}`}>{renderInline(text)}</h2>;
+            return <h3 key={`h3-${blockIndex}-${sectionIndex}`}>{renderInline(text)}</h3>;
+          }
+
+          if (
+            lines.length >= 2 &&
+            lines.every((line) => line.includes("|")) &&
+            lines[1].match(/^\|?[\s:-|]+\|?$/)
+          ) {
+            return renderTable(lines, `table-${blockIndex}-${sectionIndex}`);
+          }
+
+          if (lines.every((line) => /^[-*]\s+/.test(line))) {
+            return (
+              <ul key={`ul-${blockIndex}-${sectionIndex}`}>
+                {lines.map((line, index) => (
+                  <li key={`li-${index}`}>{renderInline(line.replace(/^[-*]\s+/, ""))}</li>
+                ))}
+              </ul>
+            );
+          }
+
+          if (lines.every((line) => /^\d+\.\s+/.test(line))) {
+            return (
+              <ol key={`ol-${blockIndex}-${sectionIndex}`}>
+                {lines.map((line, index) => (
+                  <li key={`li-${index}`}>{renderInline(line.replace(/^\d+\.\s+/, ""))}</li>
+                ))}
+              </ol>
+            );
+          }
+
+          return <Fragment key={`p-${blockIndex}-${sectionIndex}`}>{renderParagraph(lines)}</Fragment>;
+        })}
       </Fragment>
     );
   });
@@ -164,7 +264,7 @@ function useStreamingText(messages: LocalChatMessage[]) {
 
     setVisibleText("");
     let frame = 0;
-    const step = Math.max(6, Math.ceil(fullText.length / 42));
+    const step = Math.max(8, Math.ceil(fullText.length / 40));
     const timer = window.setInterval(() => {
       frame += step;
       const nextText = fullText.slice(0, frame);
@@ -224,6 +324,17 @@ function SourcePreview({ sources }: { sources: SourceReference[] }) {
   );
 }
 
+function getStoredPinnedSessions() {
+  try {
+    const raw = window.localStorage.getItem(PINNED_SESSIONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function App() {
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [documents, setDocuments] = useState<DocumentStatus[]>([]);
@@ -237,6 +348,8 @@ export default function App() {
   const [error, setError] = useState("");
   const [renamingId, setRenamingId] = useState("");
   const [renameDraft, setRenameDraft] = useState("");
+  const [sessionQuery, setSessionQuery] = useState("");
+  const [pinnedSessionIds, setPinnedSessionIds] = useState<string[]>([]);
   const [latestAnswerMeta, setLatestAnswerMeta] = useState<{
     sessionId: string;
     answer: string;
@@ -246,8 +359,47 @@ export default function App() {
   const messageEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    setPinnedSessionIds(getStoredPinnedSessions());
     void bootstrap();
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(PINNED_SESSIONS_KEY, JSON.stringify(pinnedSessionIds));
+  }, [pinnedSessionIds]);
+
+  const activeAnswerMeta =
+    latestAnswerMeta && latestAnswerMeta.sessionId === selectedSession?.id
+      ? { answer: latestAnswerMeta.answer, sources: latestAnswerMeta.sources }
+      : undefined;
+
+  const messages = useMemo(
+    () => buildLocalMessages(selectedSession, activeAnswerMeta),
+    [activeAnswerMeta, selectedSession]
+  );
+
+  const { streamingMessageId, streamingText } = useStreamingText(messages);
+
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, sending, streamingText]);
+
+  const latestSources =
+    [...messages].reverse().find((message) => message.sources?.length)?.sources ?? [];
+
+  const completedDocuments = documents.filter((item) => item.status === "COMPLETED").length;
+  const activeDocuments = documents.filter((item) =>
+    ACTIVE_DOCUMENT_STATUSES.has(item.status.toUpperCase())
+  ).length;
+
+  useEffect(() => {
+    if (!activeDocuments && !uploading) return;
+
+    const timer = window.setInterval(() => {
+      void refreshDocuments();
+    }, 3000);
+
+    return () => window.clearInterval(timer);
+  }, [activeDocuments, uploading]);
 
   async function bootstrap() {
     setLoading(true);
@@ -294,8 +446,12 @@ export default function App() {
   }
 
   async function refreshDocuments() {
-    const documentList = await api.listDocuments();
-    setDocuments(documentList);
+    try {
+      const documentList = await api.listDocuments();
+      setDocuments(documentList);
+    } catch (documentError) {
+      setError(documentError instanceof Error ? documentError.message : "刷新文档失败");
+    }
   }
 
   async function handleSelectSession(sessionId: string) {
@@ -330,25 +486,26 @@ export default function App() {
     setSending(true);
     setError("");
 
+    const now = new Date().toISOString();
     const pendingUserMessage: LocalChatMessage = {
       id: `local-user-${Date.now()}`,
       role: "user",
       content: question,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
       pending: true
     };
     const pendingAssistantMessage: LocalChatMessage = {
       id: `local-assistant-${Date.now()}`,
       role: "assistant",
-      content: "正在检索知识库并生成回答…",
-      createdAt: new Date().toISOString(),
+      content: "正在检索知识库并整理回答…",
+      createdAt: now,
       pending: true
     };
     const baseSession: ChatSession = selectedSession ?? {
       id: selectedSessionId || "draft",
       title: "新对话",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
       messages: []
     };
 
@@ -419,6 +576,7 @@ export default function App() {
     setError("");
     try {
       await api.deleteSession(sessionId);
+      setPinnedSessionIds((current) => current.filter((item) => item !== sessionId));
       if (latestAnswerMeta?.sessionId === sessionId) {
         setLatestAnswerMeta(null);
       }
@@ -428,26 +586,31 @@ export default function App() {
     }
   }
 
-  const activeAnswerMeta =
-    latestAnswerMeta && latestAnswerMeta.sessionId === selectedSession?.id
-      ? { answer: latestAnswerMeta.answer, sources: latestAnswerMeta.sources }
-      : undefined;
+  function togglePinSession(sessionId: string) {
+    setPinnedSessionIds((current) =>
+      current.includes(sessionId)
+        ? current.filter((item) => item !== sessionId)
+        : [sessionId, ...current]
+    );
+  }
 
-  const messages = useMemo(
-    () => buildLocalMessages(selectedSession, activeAnswerMeta),
-    [activeAnswerMeta, selectedSession]
-  );
+  const filteredSessions = useMemo(() => {
+    const normalizedQuery = sessionQuery.trim().toLowerCase();
+    const filtered = normalizedQuery
+      ? sessions.filter((session) => session.title.toLowerCase().includes(normalizedQuery))
+      : sessions;
 
-  const { streamingMessageId, streamingText } = useStreamingText(messages);
+    return filtered
+      .slice()
+      .sort((left, right) => {
+        const leftPinned = pinnedSessionIds.includes(left.id) ? 1 : 0;
+        const rightPinned = pinnedSessionIds.includes(right.id) ? 1 : 0;
+        if (leftPinned !== rightPinned) return rightPinned - leftPinned;
+        return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+      });
+  }, [pinnedSessionIds, sessionQuery, sessions]);
 
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, sending, streamingText]);
-
-  const latestSources =
-    [...messages].reverse().find((message) => message.sources?.length)?.sources ?? [];
-
-  const completedDocuments = documents.filter((item) => item.status === "COMPLETED").length;
+  const hasSearchResult = filteredSessions.length > 0;
 
   return (
     <div className="app-shell">
@@ -464,78 +627,95 @@ export default function App() {
           新建对话
         </button>
 
+        <div className="search-box">
+          <input
+            value={sessionQuery}
+            onChange={(event) => setSessionQuery(event.target.value)}
+            placeholder="搜索会话标题"
+          />
+        </div>
+
         <div className="panel-header">
           <span>会话列表</span>
-          <span>{sessions.length}</span>
+          <span>{filteredSessions.length}</span>
         </div>
 
         <div className="session-list">
-          {sessions.length === 0 ? (
-            <div className="empty-tile compact">还没有会话，先发起第一轮问答。</div>
+          {!hasSearchResult ? (
+            <div className="empty-tile compact">
+              {sessionQuery ? "没有匹配的会话。" : "还没有会话，先发起第一轮问答。"}
+            </div>
           ) : (
-            sessions.map((session) => (
-              <article
-                key={session.id}
-                className={`session-card ${
-                  session.id === selectedSessionId ? "active" : ""
-                }`}
-              >
-                {renamingId === session.id ? (
-                  <>
-                    <input
-                      className="ghost-input"
-                      value={renameDraft}
-                      onChange={(event) => setRenameDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          void handleRenameSubmit(session.id);
-                        }
-                        if (event.key === "Escape") {
-                          setRenamingId("");
-                          setRenameDraft("");
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <div className="session-actions">
-                      <button onClick={() => void handleRenameSubmit(session.id)}>保存</button>
-                      <button
-                        onClick={() => {
-                          setRenamingId("");
-                          setRenameDraft("");
+            filteredSessions.map((session) => {
+              const pinned = pinnedSessionIds.includes(session.id);
+              return (
+                <article
+                  key={session.id}
+                  className={`session-card ${
+                    session.id === selectedSessionId ? "active" : ""
+                  }`}
+                >
+                  {renamingId === session.id ? (
+                    <>
+                      <input
+                        className="ghost-input"
+                        value={renameDraft}
+                        onChange={(event) => setRenameDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") void handleRenameSubmit(session.id);
+                          if (event.key === "Escape") {
+                            setRenamingId("");
+                            setRenameDraft("");
+                          }
                         }}
-                      >
-                        取消
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className="session-main"
-                      onClick={() => void handleSelectSession(session.id)}
-                    >
-                      <strong>{session.title || "未命名会话"}</strong>
-                      <span>{session.messageCount} 条消息</span>
-                      <time>{formatTime(session.updatedAt)}</time>
-                    </button>
-                    <div className="session-actions">
+                        autoFocus
+                      />
+                      <div className="session-actions">
+                        <button onClick={() => void handleRenameSubmit(session.id)}>保存</button>
+                        <button
+                          onClick={() => {
+                            setRenamingId("");
+                            setRenameDraft("");
+                          }}
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
                       <button
-                        onClick={() => {
-                          setRenamingId(session.id);
-                          setRenameDraft(session.title);
-                        }}
+                        className="session-main"
+                        onClick={() => void handleSelectSession(session.id)}
                       >
-                        重命名
+                        <div className="session-title-row">
+                          <strong>{session.title || "未命名会话"}</strong>
+                          {pinned ? <span className="pin-badge">已固定</span> : null}
+                        </div>
+                        <span>{session.messageCount} 条消息</span>
+                        <time>{formatTime(session.updatedAt)}</time>
                       </button>
-                      <button onClick={() => void handleDeleteSession(session.id)}>
-                        删除
-                      </button>
-                    </div>
-                  </>
-                )}
-              </article>
-            ))
+                      <div className="session-actions">
+                        <button onClick={() => togglePinSession(session.id)}>
+                          {pinned ? "取消固定" : "固定"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRenamingId(session.id);
+                            setRenameDraft(session.title);
+                          }}
+                        >
+                          重命名
+                        </button>
+                        <button onClick={() => void handleDeleteSession(session.id)}>
+                          删除
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </article>
+              );
+            })
           )}
         </div>
       </aside>
@@ -555,10 +735,11 @@ export default function App() {
           <div className="topbar-status">
             <span>{completedDocuments} 已入库</span>
             <span>{sessions.length} 会话</span>
+            {activeDocuments ? <span>{activeDocuments} 文档处理中</span> : null}
           </div>
         </div>
 
-        {error ? <div className="error-banner">{escapeHtml(error)}</div> : null}
+        {error ? <div className="error-banner">{error}</div> : null}
 
         <section className="chat-panel">
           {loading ? (
@@ -661,6 +842,9 @@ export default function App() {
           >
             {uploading ? "上传中…" : "上传文件"}
           </button>
+          {activeDocuments ? (
+            <p className="panel-tip">检测到文档仍在处理，列表会自动轮询刷新。</p>
+          ) : null}
         </section>
 
         <section className="knowledge-card">
