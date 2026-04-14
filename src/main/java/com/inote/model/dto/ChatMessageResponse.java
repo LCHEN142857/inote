@@ -5,15 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InoteResponse {
+public class ChatMessageResponse {
 
-    private String sessionId;
-    private String answer;
-    private List<SourceReference> sources;
+    private String id;
+    private String role;
+    private String content;
+    private LocalDateTime createdAt;
 }

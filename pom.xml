@@ -39,6 +39,17 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Spring AI OpenAI (用于 OpenAI 兼容 API，支持通义千问、Kimi 等) -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
