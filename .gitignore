@@ -23,3 +23,5 @@ uploads
 
 # 本地配置文件（包含敏感密钥，禁止提交）
 src/main/resources/application-local.yml
+
+web/node_modules
