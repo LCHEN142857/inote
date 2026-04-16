@@ -1,4 +1,4 @@
-// 声明测试类所在包。
+// 声明当前源文件的包。
 package com.inote.repository;
 
 import com.inote.model.entity.ChatMessage;
@@ -15,109 +15,124 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// 标记当前类为 JPA 切片测试。
+// 应用当前注解。
 @DataJpaTest
-// 指定当前测试启用 test 配置文件。
+// 应用当前注解。
 @ActiveProfiles("test")
+// 声明当前类型。
 class PersistenceLayerTest {
 
-    // 注入用户仓储。
+    // 应用当前注解。
     @Autowired
+    // 声明当前字段。
     private UserRepository userRepository;
 
-    // 注入文档仓储。
+    // 应用当前注解。
     @Autowired
+    // 声明当前字段。
     private DocumentRepository documentRepository;
 
-    // 注入会话仓储。
+    // 应用当前注解。
     @Autowired
+    // 声明当前字段。
     private ChatSessionRepository chatSessionRepository;
 
-    // 注入消息仓储。
+    // 应用当前注解。
     @Autowired
+    // 声明当前字段。
     private ChatMessageRepository chatMessageRepository;
 
     /**
-     * 验证用户仓储支持按用户名与令牌查询。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `userRepositoryFindsUsersByUsernameAndAuthToken` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void userRepositoryFindsUsersByUsernameAndAuthToken() throws Exception {
-        // 构造待保存用户实体。
+        // 执行当前语句。
         User user = TestDataFactory.user("user-1", "tester", "token-1");
-        // 清空预置时间以覆盖实体回调逻辑。
+        // 执行当前语句。
         user.setCreatedAt(null);
-        // 清空更新时间以覆盖实体回调逻辑。
+        // 执行当前语句。
         user.setUpdatedAt(null);
-        // 清空主键以覆盖自动主键生成逻辑。
+        // 执行当前语句。
         user.setId(null);
-        // 保存用户实体。
+        // 执行当前语句。
         User savedUser = userRepository.save(user);
-        // 断言主键已在持久化前生成。
+        // 执行当前语句。
         assertThat(savedUser.getId()).isNotBlank();
-        // 断言创建时间已写入。
+        // 执行当前语句。
         assertThat(savedUser.getCreatedAt()).isNotNull();
-        // 断言更新时间已写入。
+        // 执行当前语句。
         assertThat(savedUser.getUpdatedAt()).isNotNull();
-        // 断言按用户名可查询到用户。
+        // 执行当前语句。
         assertThat(userRepository.findByUsername("tester")).isPresent();
-        // 断言按令牌可查询到用户。
+        // 执行当前语句。
         assertThat(userRepository.findByAuthToken("token-1")).isPresent();
+    // 结束当前代码块。
     }
 
     /**
-     * 验证文档仓储只会返回指定用户的文档。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `documentRepositoryFiltersByOwnerId` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void documentRepositoryFiltersByOwnerId() throws Exception {
-        // 保存第一个测试用户。
+        // 执行当前语句。
         User firstUser = userRepository.save(TestDataFactory.user("user-1", "tester-a", "token-a"));
-        // 保存第二个测试用户。
+        // 执行当前语句。
         User secondUser = userRepository.save(TestDataFactory.user("user-2", "tester-b", "token-b"));
-        // 保存第一个用户的文档。
+        // 执行当前语句。
         Document firstDocument = documentRepository.save(TestDataFactory.document("doc-1", firstUser, "COMPLETED"));
-        // 保存第二个用户的文档。
+        // 执行当前语句。
         documentRepository.save(TestDataFactory.document("doc-2", secondUser, "FAILED"));
-        // 按第一个用户查询文档列表。
+        // 执行当前语句。
         List<Document> documents = documentRepository.findAllByOwnerIdOrderByUpdatedAtDesc(firstUser.getId());
-        // 断言仅返回一个文档。
+        // 执行当前语句。
         assertThat(documents).hasSize(1);
-        // 断言返回文档属于第一个用户。
+        // 执行当前语句。
         assertThat(documents.get(0).getId()).isEqualTo(firstDocument.getId());
-        // 断言按主键和归属用户可命中结果。
+        // 执行当前语句。
         assertThat(documentRepository.findByIdAndOwnerId(firstDocument.getId(), firstUser.getId())).isPresent();
-        // 断言跨用户查询不会命中文档。
+        // 执行当前语句。
         assertThat(documentRepository.findByIdAndOwnerId(firstDocument.getId(), secondUser.getId())).isEmpty();
+    // 结束当前代码块。
     }
 
     /**
-     * 验证会话与消息仓储的聚合查询行为。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `chatRepositoriesSupportOwnerQueriesAndMessageCounting` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void chatRepositoriesSupportOwnerQueriesAndMessageCounting() throws Exception {
-        // 保存测试用户实体。
+        // 执行当前语句。
         User user = userRepository.save(TestDataFactory.user("user-1", "tester", "token-1"));
-        // 保存测试会话实体。
+        // 执行当前语句。
         ChatSession session = chatSessionRepository.save(TestDataFactory.session("session-1", user, "Session Title"));
-        // 保存第一条消息。
+        // 执行当前语句。
         ChatMessage firstMessage = chatMessageRepository.save(TestDataFactory.message("msg-1", session, "user", "hello"));
-        // 保存第二条消息。
+        // 执行当前语句。
         ChatMessage secondMessage = chatMessageRepository.save(TestDataFactory.message("msg-2", session, "assistant", "hi"));
-        // 断言按归属用户可查到会话。
+        // 执行当前语句。
         assertThat(chatSessionRepository.findByIdAndOwnerId(session.getId(), user.getId())).isPresent();
-        // 断言存在性检查返回 true。
+        // 执行当前语句。
         assertThat(chatSessionRepository.existsByIdAndOwnerId(session.getId(), user.getId())).isTrue();
-        // 断言消息按时间顺序返回。
+        // 执行当前语句。
         assertThat(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(session.getId())).extracting(ChatMessage::getId).contains(firstMessage.getId(), secondMessage.getId());
-        // 断言按会话聚合计数返回两条消息。
+        // 执行当前语句。
         assertThat(chatMessageRepository.countBySessionIds(List.of(session.getId()))).singleElement().satisfies(row -> assertThat(row[1]).isEqualTo(2L));
+    // 结束当前代码块。
     }
+// 结束当前代码块。
 }

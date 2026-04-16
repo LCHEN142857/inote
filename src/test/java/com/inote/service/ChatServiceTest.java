@@ -1,4 +1,4 @@
-// 声明测试类所在包。
+// 声明当前源文件的包。
 package com.inote.service;
 
 import com.inote.client.FallbackChatModel;
@@ -33,145 +33,165 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// 标记当前类使用 Mockito 扩展。
+// 应用当前注解。
 @ExtendWith(MockitoExtension.class)
+// 声明当前类型。
 class ChatServiceTest {
 
-    // 声明主聊天模型模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private ChatModel chatModel;
 
-    // 声明容错聊天模型模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private FallbackChatModel fallbackChatModel;
 
-    // 声明检索流水线模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private RetrievalPipelineService retrievalPipelineService;
 
-    // 声明会话服务模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private ChatSessionService chatSessionService;
 
-    // 声明消息仓储模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private ChatMessageRepository chatMessageRepository;
 
-    // 声明被测服务实例。
+    // 应用当前注解。
     @InjectMocks
+    // 声明当前字段。
     private ChatService chatService;
 
     /**
-     * 验证没有检索结果且没有会话时不会持久化消息。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `queryReturnsFallbackAnswerWithoutPersistingWhenSessionIsMissing` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void queryReturnsFallbackAnswerWithoutPersistingWhenSessionIsMissing() throws Exception {
-        // 构造无会话请求对象。
+        // 执行当前语句。
         ChatRequest request = ChatRequest.builder().question("What is inote?").build();
-        // 模拟检索结果为空。
+        // 执行当前语句。
         when(retrievalPipelineService.retrieve("What is inote?")).thenReturn(new RetrievalResult("What is inote?", "What is inote?", List.of()));
-        // 调用查询方法。
+        // 执行当前语句。
         var response = chatService.query(request);
-        // 断言返回兜底回答。
+        // 执行当前语句。
         assertThat(response.getAnswer()).isEqualTo("The current documents do not provide enough information to answer this question.");
-        // 断言未创建会话标识。
+        // 执行当前语句。
         assertThat(response.getSessionId()).isNull();
-        // 断言没有调用模型。
+        // 执行当前语句。
         verify(fallbackChatModel, never()).callWithFallback(any(ChatModel.class), any(Prompt.class));
-        // 断言没有落库消息。
+        // 执行当前语句。
         verify(chatMessageRepository, never()).save(any(ChatMessage.class));
+    // 结束当前代码块。
     }
 
     /**
-     * 验证无文档结果但有会话时会持久化用户和助手消息并更新标题。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `queryPersistsConversationAndRenamesDefaultSessionWhenFirstTurnHasNoDocs` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void queryPersistsConversationAndRenamesDefaultSessionWhenFirstTurnHasNoDocs() throws Exception {
-        // 构造测试用户。
+        // 执行当前语句。
         var user = TestDataFactory.user("user-1", "tester", "token-1");
-        // 构造默认标题会话。
+        // 执行当前语句。
         ChatSession session = TestDataFactory.session("session-1", user, "New Session");
-        // 构造带会话请求对象。
+        // 执行当前语句。
         ChatRequest request = ChatRequest.builder().sessionId("session-1").question("How should we start this migration?").build();
-        // 模拟会话解析结果。
+        // 执行当前语句。
         when(chatSessionService.getSessionEntity("session-1")).thenReturn(session);
-        // 模拟历史消息为空。
+        // 执行当前语句。
         when(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc("session-1")).thenReturn(List.of());
-        // 模拟检索结果为空。
+        // 执行当前语句。
         when(retrievalPipelineService.retrieve("How should we start this migration?")).thenReturn(new RetrievalResult("How should we start this migration?", "How should we start this migration?", List.of()));
-        // 调用查询方法。
+        // 执行当前语句。
         var response = chatService.query(request);
-        // 捕获被保存的消息实体。
+        // 执行当前语句。
         ArgumentCaptor<ChatMessage> messageCaptor = ArgumentCaptor.forClass(ChatMessage.class);
-        // 断言消息被保存两次。
+        // 执行当前语句。
         verify(chatMessageRepository, times(2)).save(messageCaptor.capture());
-        // 断言返回会话标识。
+        // 执行当前语句。
         assertThat(response.getSessionId()).isEqualTo("session-1");
-        // 断言会话标题已从默认值改为问题摘要。
+        // 执行当前语句。
         assertThat(session.getTitle()).isEqualTo("How should we start ...");
-        // 断言首条消息角色为用户。
+        // 执行当前语句。
         assertThat(messageCaptor.getAllValues().get(0).getRole()).isEqualTo("user");
-        // 断言第二条消息角色为助手。
+        // 执行当前语句。
         assertThat(messageCaptor.getAllValues().get(1).getRole()).isEqualTo("assistant");
-        // 断言会话刷新方法被调用。
+        // 执行当前语句。
         verify(chatSessionService).touchSession(session);
+    // 结束当前代码块。
     }
 
     /**
-     * 验证检索到文档时会调用模型并提取去重后的来源。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `queryUsesModelWhenRelevantDocumentsExist` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void queryUsesModelWhenRelevantDocumentsExist() throws Exception {
-        // 构造测试文档一。
+        // 执行当前语句。
         Document firstDocument = new Document("first chunk", Map.of("file_name", "doc-1.txt", "file_url", "/files/1"));
-        // 构造测试文档二并复用相同来源以覆盖去重逻辑。
+        // 执行当前语句。
         Document secondDocument = new Document("second chunk", Map.of("file_name", "doc-1.txt", "file_url", "/files/1"));
-        // 构造模拟模型响应。
+        // 执行当前语句。
         ChatResponse modelResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("generated answer"))));
-        // 构造查询请求对象。
+        // 执行当前语句。
         ChatRequest request = ChatRequest.builder().question("Summarize the uploaded files").build();
-        // 模拟检索流水线返回文档。
+        // 执行当前语句。
         when(retrievalPipelineService.retrieve("Summarize the uploaded files")).thenReturn(new RetrievalResult("Summarize the uploaded files", "Summarize the uploaded files", List.of(firstDocument, secondDocument)));
-        // 模拟容错模型返回正常回答。
+        // 执行当前语句。
         when(fallbackChatModel.callWithFallback(eq(chatModel), any(Prompt.class))).thenReturn(modelResponse);
-        // 调用查询方法。
+        // 执行当前语句。
         var response = chatService.query(request);
-        // 断言调用模型后返回生成答案。
+        // 执行当前语句。
         assertThat(response.getAnswer()).isEqualTo("generated answer");
-        // 断言来源列表按 URL 去重。
+        // 执行当前语句。
         assertThat(response.getSources()).hasSize(1);
-        // 断言来源文件名映射正确。
+        // 执行当前语句。
         assertThat(response.getSources().get(0).getFileName()).isEqualTo("doc-1.txt");
+    // 结束当前代码块。
     }
 
     /**
-     * 验证模型异常时会返回服务不可用文案。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `queryReturnsServiceUnavailableMessageWhenModelThrowsException` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void queryReturnsServiceUnavailableMessageWhenModelThrowsException() throws Exception {
-        // 构造单个相关文档。
+        // 执行当前语句。
         Document document = new Document("knowledge chunk", Map.of("file_name", "doc-1.txt", "file_url", "/files/1"));
-        // 构造查询请求对象。
+        // 执行当前语句。
         ChatRequest request = ChatRequest.builder().question("Answer from docs").build();
-        // 模拟检索流水线返回相关文档。
+        // 执行当前语句。
         when(retrievalPipelineService.retrieve("Answer from docs")).thenReturn(new RetrievalResult("Answer from docs", "Answer from docs", List.of(document)));
-        // 模拟模型调用抛出异常。
+        // 执行当前语句。
         when(fallbackChatModel.callWithFallback(eq(chatModel), any(Prompt.class))).thenThrow(new RuntimeException("boom"));
-        // 调用查询方法。
+        // 执行当前语句。
         var response = chatService.query(request);
-        // 断言返回服务不可用提示。
+        // 执行当前语句。
         assertThat(response.getAnswer()).isEqualTo("The service is temporarily unavailable. Please try again later.");
+    // 结束当前代码块。
     }
+// 结束当前代码块。
 }

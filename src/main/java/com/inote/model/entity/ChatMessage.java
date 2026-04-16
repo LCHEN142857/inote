@@ -1,3 +1,4 @@
+// 声明当前源文件的包。
 package com.inote.model.entity;
 
 import jakarta.persistence.Column;
@@ -19,40 +20,76 @@ import lombok.ToString;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+// 应用当前注解。
 @Getter
+// 应用当前注解。
 @Setter
+// 应用当前注解。
 @Builder
+// 应用当前注解。
 @NoArgsConstructor
+// 应用当前注解。
 @AllArgsConstructor
+// 应用当前注解。
 @Entity
+// 应用当前注解。
 @Table(name = "chat_messages")
+// 应用当前注解。
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+// 应用当前注解。
 @ToString(exclude = "session")
+// 声明当前类型。
 public class ChatMessage {
 
+    // 应用当前注解。
     @Id
+    // 应用当前注解。
     @EqualsAndHashCode.Include
+    // 应用当前注解。
     @Column(length = 36, nullable = false, updatable = false)
+    // 声明当前字段。
     private String id;
 
+    // 应用当前注解。
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    // 应用当前注解。
     @JoinColumn(name = "session_id", nullable = false)
+    // 声明当前字段。
     private ChatSession session;
 
+    // 应用当前注解。
     @Column(nullable = false, length = 20)
+    // 声明当前字段。
     private String role;
 
+    // 应用当前注解。
     @Column(nullable = false, columnDefinition = "TEXT")
+    // 声明当前字段。
     private String content;
 
+    // 应用当前注解。
     @Column(nullable = false)
+    // 声明当前字段。
     private LocalDateTime createdAt;
 
+    /**
+     * 描述 `prePersist` 操作。
+     *
+     * @return 无返回值。
+     */
+    // 应用当前注解。
     @PrePersist
+    // 处理当前代码结构。
     void prePersist() {
+        // 执行当前流程控制分支。
         if (id == null) {
+            // 执行当前语句。
             id = UUID.randomUUID().toString();
+        // 结束当前代码块。
         }
+        // 执行当前语句。
         createdAt = LocalDateTime.now();
+    // 结束当前代码块。
     }
+// 结束当前代码块。
 }

@@ -1,32 +1,29 @@
-// 声明包路径，DTO 层
+// 声明当前源文件的包。
 package com.inote.model.dto;
 
-// 导入 Lombok 全参构造函数注解
 import lombok.AllArgsConstructor;
-// 导入 Lombok 建造者模式注解
 import lombok.Builder;
-// 导入 Lombok 数据类注解
 import lombok.Data;
-// 导入 Lombok 无参构造函数注解
 import lombok.NoArgsConstructor;
 
-// 自动生成 getter、setter、toString、equals、hashCode 方法
+// 应用当前注解。
 @Data
-// 启用 Builder 建造者模式
+// 应用当前注解。
 @Builder
-// 生成无参构造函数
+// 应用当前注解。
 @NoArgsConstructor
-// 生成全参构造函数
+// 应用当前注解。
 @AllArgsConstructor
-// 文档上传响应 DTO，返回给前端上传结果
+// 声明当前类型。
 public class DocumentUploadResponse {
 
-    // 文档唯一标识 ID
+    // 声明当前字段。
     private String documentId;
-    // 上传的原始文件名
+    // 声明当前字段。
     private String fileName;
-    // 文档处理状态：PENDING（待处理）/ PROCESSING（处理中）/ COMPLETED（完成）/ FAILED（失败）
+    // 声明当前字段。
     private String status;
-    // 附加提示信息，如成功或失败原因
+    // 声明当前字段。
     private String message;
+// 结束当前代码块。
 }

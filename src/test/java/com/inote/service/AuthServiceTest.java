@@ -1,4 +1,4 @@
-// 声明测试类所在包。
+// 声明当前源文件的包。
 package com.inote.service;
 
 import com.inote.config.AuthProperties;
@@ -28,162 +28,186 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// 标记当前类使用 Mockito 扩展。
+// 应用当前注解。
 @ExtendWith(MockitoExtension.class)
+// 声明当前类型。
 class AuthServiceTest {
 
-    // 声明用户仓储模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private UserRepository userRepository;
 
-    // 声明密码编码器模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private PasswordEncoder passwordEncoder;
 
-    // 声明当前用户服务模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private CurrentUserService currentUserService;
 
-    // 声明被测服务实例。
+    // 应用当前注解。
     @InjectMocks
+    // 声明当前字段。
     private AuthService authService;
 
-    // 声明认证属性配置对象。
+    // 声明当前字段。
     private AuthProperties authProperties;
 
     /**
-     * 初始化认证测试环境。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当反射写入字段失败时抛出异常。
+     * 描述 `setUp` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @BeforeEach
+    // 处理当前代码结构。
     void setUp() throws Exception {
-        // 创建认证属性配置对象。
+        // 执行当前语句。
         authProperties = new AuthProperties();
-        // 设置验证码长度配置。
+        // 执行当前语句。
         authProperties.setCaptchaLength(6);
-        // 通过反射写入被测服务的配置字段。
+        // 执行当前语句。
         org.springframework.test.util.ReflectionTestUtils.setField(authService, "authProperties", authProperties);
+    // 结束当前代码块。
     }
 
     /**
-     * 验证生成验证码时会返回最少四位字符。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `generateCaptchaUsesMinimumLengthConstraint` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void generateCaptchaUsesMinimumLengthConstraint() throws Exception {
-        // 设置较小的验证码长度以覆盖最小值逻辑。
+        // 执行当前语句。
         authProperties.setCaptchaLength(2);
-        // 调用生成验证码方法。
+        // 执行当前语句。
         AuthCaptchaResponse response = authService.generateCaptcha();
-        // 断言验证码编号已生成。
+        // 执行当前语句。
         assertThat(response.getCaptchaId()).isNotBlank();
-        // 断言验证码长度至少为四位。
+        // 执行当前语句。
         assertThat(response.getCaptchaCode()).hasSize(4);
+    // 结束当前代码块。
     }
 
     /**
-     * 验证合法验证码会触发注册流程并返回新令牌。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `loginOrRegisterRegistersNewUserWhenUsernameDoesNotExist` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void loginOrRegisterRegistersNewUserWhenUsernameDoesNotExist() throws Exception {
-        // 生成可用验证码。
+        // 执行当前语句。
         AuthCaptchaResponse captcha = authService.generateCaptcha();
-        // 模拟用户名查询结果为空。
+        // 执行当前语句。
         when(userRepository.findByUsername("tester")).thenReturn(Optional.empty());
-        // 模拟密码编码结果。
+        // 执行当前语句。
         when(passwordEncoder.encode("secret123")).thenReturn("encoded-secret");
-        // 模拟仓储保存后返回带令牌的实体。
+        // 执行当前语句。
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0, User.class));
-        // 构造登录请求对象。
+        // 执行当前语句。
         AuthLoginRequest request = AuthLoginRequest.builder().username("Tester").password("secret123").captchaId(captcha.getCaptchaId()).captchaCode(captcha.getCaptchaCode()).build();
-        // 调用登录或注册方法。
+        // 执行当前语句。
         var response = authService.loginOrRegister(request);
-        // 捕获被保存的用户实体。
+        // 执行当前语句。
         ArgumentCaptor<User> savedUserCaptor = ArgumentCaptor.forClass(User.class);
-        // 断言仓储保存被调用。
+        // 执行当前语句。
         verify(userRepository).save(savedUserCaptor.capture());
-        // 断言返回用户名已规范化。
+        // 执行当前语句。
         assertThat(response.getUsername()).isEqualTo("tester");
-        // 断言返回令牌已生成。
+        // 执行当前语句。
         assertThat(response.getToken()).isNotBlank();
-        // 断言保存的密码哈希来自编码器。
+        // 执行当前语句。
         assertThat(savedUserCaptor.getValue().getPasswordHash()).isEqualTo("encoded-secret");
-        // 断言保存的令牌已写入用户实体。
+        // 执行当前语句。
         assertThat(savedUserCaptor.getValue().getAuthToken()).isEqualTo(response.getToken());
+    // 结束当前代码块。
     }
 
     /**
-     * 验证错误密码会抛出未授权异常。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `loginOrRegisterThrowsUnauthorizedWhenPasswordDoesNotMatch` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void loginOrRegisterThrowsUnauthorizedWhenPasswordDoesNotMatch() throws Exception {
-        // 生成可用验证码。
+        // 执行当前语句。
         AuthCaptchaResponse captcha = authService.generateCaptcha();
-        // 构造已存在用户。
+        // 执行当前语句。
         User existingUser = TestDataFactory.user("user-1", "tester", "token-1");
-        // 设置已存在用户密码哈希。
+        // 执行当前语句。
         existingUser.setPasswordHash("encoded-secret");
-        // 模拟用户名查询返回已存在用户。
+        // 执行当前语句。
         when(userRepository.findByUsername("tester")).thenReturn(Optional.of(existingUser));
-        // 模拟密码比对失败。
+        // 执行当前语句。
         when(passwordEncoder.matches("wrong-pass", "encoded-secret")).thenReturn(false);
-        // 构造错误密码请求。
+        // 执行当前语句。
         AuthLoginRequest request = AuthLoginRequest.builder().username("tester").password("wrong-pass").captchaId(captcha.getCaptchaId()).captchaCode(captcha.getCaptchaCode()).build();
-        // 断言调用会抛出未授权异常。
+        // 执行当前语句。
         assertThatThrownBy(() -> authService.loginOrRegister(request)).isInstanceOf(UnauthorizedException.class).hasMessage("Username or password is incorrect.");
-        // 断言失败时不会保存用户。
+        // 执行当前语句。
         verify(userRepository, never()).save(any(User.class));
+    // 结束当前代码块。
     }
 
     /**
-     * 验证重置密码时会校验两次输入是否一致。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `resetPasswordRejectsMismatchedConfirmation` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void resetPasswordRejectsMismatchedConfirmation() throws Exception {
-        // 构造不一致的密码重置请求。
+        // 执行当前语句。
         ResetPasswordRequest request = ResetPasswordRequest.builder().newPassword("secret123").confirmPassword("secret456").build();
-        // 断言调用会抛出参数异常。
+        // 执行当前语句。
         assertThatThrownBy(() -> authService.resetPassword(request)).isInstanceOf(IllegalArgumentException.class).hasMessage("The two password entries do not match.");
+    // 结束当前代码块。
     }
 
     /**
-     * 验证重置密码成功时会刷新密码哈希和认证令牌。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `resetPasswordUpdatesPasswordHashAndToken` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void resetPasswordUpdatesPasswordHashAndToken() throws Exception {
-        // 构造当前登录用户。
+        // 执行当前语句。
         User currentUser = TestDataFactory.user("user-1", "tester", "old-token");
-        // 模拟当前用户服务返回当前用户。
+        // 执行当前语句。
         when(currentUserService.getCurrentUser()).thenReturn(currentUser);
-        // 模拟密码编码结果。
+        // 执行当前语句。
         when(passwordEncoder.encode("secret123")).thenReturn("encoded-secret");
-        // 模拟保存操作返回同一实体。
+        // 执行当前语句。
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0, User.class));
-        // 构造合法密码重置请求。
+        // 执行当前语句。
         ResetPasswordRequest request = ResetPasswordRequest.builder().newPassword("secret123").confirmPassword("secret123").build();
-        // 调用重置密码方法。
+        // 执行当前语句。
         authService.resetPassword(request);
-        // 断言新密码哈希已写入用户。
+        // 执行当前语句。
         assertThat(currentUser.getPasswordHash()).isEqualTo("encoded-secret");
-        // 断言令牌已被刷新。
+        // 执行当前语句。
         assertThat(currentUser.getAuthToken()).isNotEqualTo("old-token");
-        // 断言用户变更已持久化。
+        // 执行当前语句。
         verify(userRepository).save(currentUser);
+    // 结束当前代码块。
     }
+// 结束当前代码块。
 }

@@ -1,4 +1,4 @@
-// 声明测试类所在包。
+// 声明当前源文件的包。
 package com.inote.service.retrieval;
 
 import com.inote.config.RagProperties;
@@ -18,116 +18,132 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// 标记当前类使用 Mockito 扩展。
+// 应用当前注解。
 @ExtendWith(MockitoExtension.class)
+// 声明当前类型。
 class RetrievalPipelineServiceTest {
 
-    // 声明 RAG 配置对象。
+    // 声明当前字段。
     private RagProperties ragProperties;
 
-    // 声明查询改写服务模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private QueryRewriteService queryRewriteService;
 
-    // 声明查询拆分服务模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private QueryDecompositionService queryDecompositionService;
 
-    // 声明混合检索服务模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private HybridRetrievalService hybridRetrievalService;
 
-    // 声明重排服务模拟对象。
+    // 应用当前注解。
     @Mock
+    // 声明当前字段。
     private RerankService rerankService;
 
-    // 声明被测服务实例。
+    // 应用当前注解。
     @InjectMocks
+    // 声明当前字段。
     private RetrievalPipelineService retrievalPipelineService;
 
     /**
-     * 初始化检索流水线测试环境。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当反射写入字段失败时抛出异常。
+     * 描述 `setUp` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @BeforeEach
+    // 处理当前代码结构。
     void setUp() throws Exception {
-        // 创建 RAG 配置对象。
+        // 执行当前语句。
         ragProperties = new RagProperties();
-        // 关闭查询改写能力。
+        // 执行当前语句。
         ragProperties.setQueryRewriteEnabled(false);
-        // 关闭多查询能力。
+        // 执行当前语句。
         ragProperties.setMultiQueryEnabled(false);
-        // 关闭重排能力。
+        // 执行当前语句。
         ragProperties.setRerankEnabled(false);
-        // 设置最终返回文档数量。
+        // 执行当前语句。
         ragProperties.setFinalTopK(2);
-        // 通过反射写入配置字段。
+        // 执行当前语句。
         org.springframework.test.util.ReflectionTestUtils.setField(retrievalPipelineService, "ragProperties", ragProperties);
+    // 结束当前代码块。
     }
 
     /**
-     * 验证默认路径会直接返回混合检索结果并遵循数量限制。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `retrieveUsesShortestPathWhenOptionalStagesAreDisabled` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void retrieveUsesShortestPathWhenOptionalStagesAreDisabled() throws Exception {
-        // 构造三个候选文档。
+        // 执行当前语句。
         Document firstDocument = new Document("doc-1", Map.of("file_name", "a.txt"));
-        // 构造第二个候选文档。
+        // 执行当前语句。
         Document secondDocument = new Document("doc-2", Map.of("file_name", "b.txt"));
-        // 构造第三个候选文档。
+        // 执行当前语句。
         Document thirdDocument = new Document("doc-3", Map.of("file_name", "c.txt"));
-        // 模拟混合检索返回候选列表。
+        // 执行当前语句。
         when(hybridRetrievalService.retrieve("question")).thenReturn(List.of(firstDocument, secondDocument, thirdDocument));
-        // 调用检索方法。
+        // 执行当前语句。
         RetrievalResult result = retrievalPipelineService.retrieve("question");
-        // 断言搜索查询未被改写。
+        // 执行当前语句。
         assertThat(result.searchQuery()).isEqualTo("question");
-        // 断言返回文档数量遵循 finalTopK。
+        // 执行当前语句。
         assertThat(result.documents()).hasSize(2);
-        // 断言未调用改写服务。
+        // 执行当前语句。
         verify(queryRewriteService, never()).rewrite("question");
-        // 断言未调用拆分服务。
+        // 执行当前语句。
         verify(queryDecompositionService, never()).decompose("question");
-        // 断言未调用重排服务。
+        // 执行当前语句。
         verify(rerankService, never()).rerank(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyInt());
+    // 结束当前代码块。
     }
 
     /**
-     * 验证开启改写与多查询时会去重合并候选结果。
-     * @param none 无入参。
-     * @return void 无返回值。
-     * @throws Exception 当前用例不抛出受检异常。
+     * 描述 `retrieveRewritesQueryAndDeduplicatesAcrossSubQueries` 操作。
+     *
+     * @return 无返回值。
+     * @throws Exception 已声明的异常类型 `Exception`。
      */
+    // 应用当前注解。
     @Test
+    // 处理当前代码结构。
     void retrieveRewritesQueryAndDeduplicatesAcrossSubQueries() throws Exception {
-        // 开启查询改写。
+        // 执行当前语句。
         ragProperties.setQueryRewriteEnabled(true);
-        // 开启多查询。
+        // 执行当前语句。
         ragProperties.setMultiQueryEnabled(true);
-        // 构造共享主键文档。
+        // 执行当前语句。
         Document sharedDocument = Document.builder().id("shared-id").text("shared").metadata(Map.of("file_name", "shared.txt")).build();
-        // 构造唯一文档。
+        // 执行当前语句。
         Document uniqueDocument = Document.builder().id("unique-id").text("unique").metadata(Map.of("file_name", "unique.txt")).build();
-        // 模拟改写结果。
+        // 执行当前语句。
         when(queryRewriteService.rewrite("question")).thenReturn("rewritten question");
-        // 模拟拆分结果。
+        // 执行当前语句。
         when(queryDecompositionService.decompose("rewritten question")).thenReturn(List.of("query-a", "query-b"));
-        // 模拟第一路检索结果。
+        // 执行当前语句。
         when(hybridRetrievalService.retrieve("query-a")).thenReturn(List.of(sharedDocument));
-        // 模拟第二路检索结果。
+        // 执行当前语句。
         when(hybridRetrievalService.retrieve("query-b")).thenReturn(List.of(sharedDocument, uniqueDocument));
-        // 调用检索方法。
+        // 执行当前语句。
         RetrievalResult result = retrievalPipelineService.retrieve("question");
-        // 断言搜索查询采用改写结果。
+        // 执行当前语句。
         assertThat(result.searchQuery()).isEqualTo("rewritten question");
-        // 断言结果经过去重后仅保留两个文档。
+        // 执行当前语句。
         assertThat(result.documents()).hasSize(2);
-        // 断言去重后仍包含共享文档。
+        // 执行当前语句。
         assertThat(result.documents()).extracting(Document::getId).containsExactly("shared-id", "unique-id");
+    // 结束当前代码块。
     }
+// 结束当前代码块。
 }

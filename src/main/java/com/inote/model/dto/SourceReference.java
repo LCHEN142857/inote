@@ -1,28 +1,25 @@
-// 声明包路径，DTO 层
+// 声明当前源文件的包。
 package com.inote.model.dto;
 
-// 导入 Lombok 全参构造函数注解
 import lombok.AllArgsConstructor;
-// 导入 Lombok 建造者模式注解
 import lombok.Builder;
-// 导入 Lombok 数据类注解
 import lombok.Data;
-// 导入 Lombok 无参构造函数注解
 import lombok.NoArgsConstructor;
 
-// 自动生成 getter、setter、toString、equals、hashCode 方法
+// 应用当前注解。
 @Data
-// 启用 Builder 建造者模式
+// 应用当前注解。
 @Builder
-// 生成无参构造函数
+// 应用当前注解。
 @NoArgsConstructor
-// 生成全参构造函数
+// 应用当前注解。
 @AllArgsConstructor
-// 引用来源 DTO，表示回答所引用的某个文档来源
+// 声明当前类型。
 public class SourceReference {
 
-    // 来源文档的文件名
+    // 声明当前字段。
     private String fileName;
-    // 来源文档的访问 URL 地址
+    // 声明当前字段。
     private String url;
+// 结束当前代码块。
 }
