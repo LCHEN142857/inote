@@ -1,6 +1,8 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import type {
+  AuthCaptcha,
+  AuthResponse,
   ChatSession,
   ChatSessionSummary,
   DocumentStatus,
@@ -34,296 +36,6 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function renderInline(text: string) {
-  const segments = text.split(
-    /(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\((https?:\/\/[^\s)]+)\)|\*[^*]+\*|~~[^~]+~~)/g
-  );
-
-  return segments.filter(Boolean).map((segment, index) => {
-    if (segment.startsWith("`") && segment.endsWith("`")) {
-      return <code key={`${segment}-${index}`}>{segment.slice(1, -1)}</code>;
-    }
-
-    if (segment.startsWith("**") && segment.endsWith("**")) {
-      return <strong key={`${segment}-${index}`}>{segment.slice(2, -2)}</strong>;
-    }
-
-    if (segment.startsWith("*") && segment.endsWith("*")) {
-      return <em key={`${segment}-${index}`}>{segment.slice(1, -1)}</em>;
-    }
-
-    if (segment.startsWith("~~") && segment.endsWith("~~")) {
-      return <del key={`${segment}-${index}`}>{segment.slice(2, -2)}</del>;
-    }
-
-    const linkMatch = segment.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
-    if (linkMatch) {
-      return (
-        <a
-          key={`${segment}-${index}`}
-          className="inline-link"
-          href={linkMatch[2]}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {linkMatch[1]}
-        </a>
-      );
-    }
-
-    return <Fragment key={`${segment}-${index}`}>{segment}</Fragment>;
-  });
-}
-
-function renderParagraph(lines: string[]) {
-  return (
-    <p>
-      {lines.map((line, index) => (
-        <Fragment key={`${line}-${index}`}>
-          {index > 0 ? <br /> : null}
-          {renderInline(line)}
-        </Fragment>
-      ))}
-    </p>
-  );
-}
-
-function renderTable(lines: string[], key: string) {
-  const rows = lines
-    .map((line) =>
-      line
-        .trim()
-        .replace(/^\|/, "")
-        .replace(/\|$/, "")
-        .split("|")
-        .map((cell) => cell.trim())
-    )
-    .filter((cells) => cells.length > 1);
-
-  if (rows.length < 2) {
-    return renderParagraph(lines);
-  }
-
-  const [header, divider, ...body] = rows;
-  const looksLikeDivider = divider.every((cell) => /^:?-{2,}:?$/.test(cell));
-  if (!looksLikeDivider) {
-    return renderParagraph(lines);
-  }
-
-  return (
-    <div className="table-wrap" key={key}>
-      <table className="message-table">
-        <thead>
-          <tr>
-            {header.map((cell, index) => (
-              <th key={`head-${index}`}>{renderInline(cell)}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {body.map((row, rowIndex) => (
-            <tr key={`row-${rowIndex}`}>
-              {row.map((cell, cellIndex) => (
-                <td key={`cell-${rowIndex}-${cellIndex}`}>{renderInline(cell)}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function renderRichText(content: string) {
-  const blocks = content.split(/```/g);
-
-  return blocks.map((block, blockIndex) => {
-    if (blockIndex % 2 === 1) {
-      const [firstLine, ...restLines] = block.split("\n");
-      const language = firstLine.trim();
-      const code = restLines.join("\n").trimEnd();
-
-      return (
-        <pre key={`code-${blockIndex}`} className="code-block">
-          {language ? <span className="code-language">{language}</span> : null}
-          <code>{code}</code>
-        </pre>
-      );
-    }
-
-    const sections = block
-      .split(/\n{2,}/)
-      .map((section) => section.trim())
-      .filter(Boolean);
-
-    return (
-      <Fragment key={`text-${blockIndex}`}>
-        {sections.map((section, sectionIndex) => {
-          const lines = section.split("\n").map((line) => line.trimEnd());
-
-          if (lines.every((line) => line.startsWith("> "))) {
-            return (
-              <blockquote key={`quote-${blockIndex}-${sectionIndex}`}>
-                {lines.map((line, index) => (
-                  <Fragment key={`quote-line-${index}`}>
-                    {index > 0 ? <br /> : null}
-                    {renderInline(line.replace(/^>\s/, ""))}
-                  </Fragment>
-                ))}
-              </blockquote>
-            );
-          }
-
-          const titleMatch = lines.length === 1 ? lines[0].match(/^(#{1,3})\s+(.+)$/) : null;
-          if (titleMatch) {
-            const level = titleMatch[1].length;
-            const text = titleMatch[2];
-            if (level === 1) return <h1 key={`h1-${blockIndex}-${sectionIndex}`}>{renderInline(text)}</h1>;
-            if (level === 2) return <h2 key={`h2-${blockIndex}-${sectionIndex}`}>{renderInline(text)}</h2>;
-            return <h3 key={`h3-${blockIndex}-${sectionIndex}`}>{renderInline(text)}</h3>;
-          }
-
-          if (
-            lines.length >= 2 &&
-            lines.every((line) => line.includes("|")) &&
-            lines[1].match(/^\|?[\s:-|]+\|?$/)
-          ) {
-            return renderTable(lines, `table-${blockIndex}-${sectionIndex}`);
-          }
-
-          if (lines.every((line) => /^[-*]\s+/.test(line))) {
-            return (
-              <ul key={`ul-${blockIndex}-${sectionIndex}`}>
-                {lines.map((line, index) => (
-                  <li key={`li-${index}`}>{renderInline(line.replace(/^[-*]\s+/, ""))}</li>
-                ))}
-              </ul>
-            );
-          }
-
-          if (lines.every((line) => /^\d+\.\s+/.test(line))) {
-            return (
-              <ol key={`ol-${blockIndex}-${sectionIndex}`}>
-                {lines.map((line, index) => (
-                  <li key={`li-${index}`}>{renderInline(line.replace(/^\d+\.\s+/, ""))}</li>
-                ))}
-              </ol>
-            );
-          }
-
-          return <Fragment key={`p-${blockIndex}-${sectionIndex}`}>{renderParagraph(lines)}</Fragment>;
-        })}
-      </Fragment>
-    );
-  });
-}
-
-function buildLocalMessages(
-  session: ChatSession | null,
-  latestAnswer?: { answer: string; sources: SourceReference[] }
-) {
-  if (!session) return [];
-
-  let answerMatched = false;
-  return [...session.messages]
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    .map<LocalChatMessage>((message) => {
-      const canAttachSources =
-        !answerMatched &&
-        latestAnswer &&
-        message.role.toLowerCase() === "assistant" &&
-        message.content === latestAnswer.answer;
-
-      if (canAttachSources) {
-        answerMatched = true;
-      }
-
-      return {
-        ...message,
-        sources: canAttachSources ? latestAnswer.sources : undefined
-      };
-    });
-}
-
-function useStreamingText(messages: LocalChatMessage[]) {
-  const assistantMessage = [...messages]
-    .reverse()
-    .find((message) => message.role.toLowerCase() === "assistant" && !message.pending);
-  const fullText = assistantMessage?.content ?? "";
-  const [visibleText, setVisibleText] = useState(fullText);
-
-  useEffect(() => {
-    if (!assistantMessage) {
-      setVisibleText("");
-      return;
-    }
-
-    if (fullText === visibleText) {
-      return;
-    }
-
-    setVisibleText("");
-    let frame = 0;
-    const step = Math.max(8, Math.ceil(fullText.length / 40));
-    const timer = window.setInterval(() => {
-      frame += step;
-      const nextText = fullText.slice(0, frame);
-      setVisibleText(nextText);
-
-      if (frame >= fullText.length) {
-        window.clearInterval(timer);
-      }
-    }, 16);
-
-    return () => window.clearInterval(timer);
-  }, [assistantMessage?.id, fullText, visibleText]);
-
-  return {
-    streamingMessageId:
-      assistantMessage && visibleText !== fullText ? assistantMessage.id : undefined,
-    streamingText: visibleText
-  };
-}
-
-function MessageContent({
-  message,
-  streamingText
-}: {
-  message: LocalChatMessage;
-  streamingText?: string;
-}) {
-  const content = streamingText ?? message.content;
-  const isAssistant = message.role.toLowerCase() === "assistant";
-
-  if (!isAssistant) {
-    return <div className="message-body plain-body">{content}</div>;
-  }
-
-  return (
-    <div className="message-body rich-body">
-      {renderRichText(content)}
-      {streamingText ? <span className="streaming-caret" /> : null}
-    </div>
-  );
-}
-
-function SourcePreview({ sources }: { sources: SourceReference[] }) {
-  return (
-    <div className="inline-sources">
-      {sources.map((source) => (
-        <a
-          key={`${source.fileName}-${source.url}`}
-          href={source.url}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {source.fileName}
-        </a>
-      ))}
-    </div>
-  );
-}
-
 function getStoredPinnedSessions() {
   try {
     const raw = window.localStorage.getItem(PINNED_SESSIONS_KEY);
@@ -335,7 +47,93 @@ function getStoredPinnedSessions() {
   }
 }
 
+function buildMessages(
+  session: ChatSession | null,
+  latestAnswer?: { answer: string; sources: SourceReference[] }
+) {
+  if (!session) return [];
+
+  let answerMatched = false;
+  return [...session.messages]
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .map<LocalChatMessage>((message) => {
+      const attachSources =
+        !answerMatched &&
+        latestAnswer &&
+        message.role.toLowerCase() === "assistant" &&
+        message.content === latestAnswer.answer;
+
+      if (attachSources) {
+        answerMatched = true;
+      }
+
+      return {
+        ...message,
+        sources: attachSources ? latestAnswer.sources : undefined
+      };
+    });
+}
+
+function AuthView(props: {
+  captcha: AuthCaptcha | null;
+  loading: boolean;
+  submitting: boolean;
+  error: string;
+  onRefresh: () => void;
+  onSubmit: (payload: { username: string; password: string; captchaCode: string }) => void;
+}) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [captchaCode, setCaptchaCode] = useState("");
+
+  return (
+    <div className="auth-shell">
+      <div className="auth-card">
+        <p className="eyebrow">User Access</p>
+        <h1>登录或注册</h1>
+        <p className="auth-copy">第一次登录自动注册，后续登录校验用户名、密码和验证码。</p>
+
+        <label className="auth-field">
+          <span>用户名</span>
+          <input value={username} onChange={(e) => setUsername(e.target.value)} />
+        </label>
+
+        <label className="auth-field">
+          <span>密码</span>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
+
+        <label className="auth-field">
+          <span>验证码</span>
+          <div className="captcha-row">
+            <input value={captchaCode} onChange={(e) => setCaptchaCode(e.target.value)} />
+            <button className="captcha-badge" onClick={props.onRefresh} disabled={props.loading}>
+              {props.loading ? "加载中" : props.captcha?.captchaCode ?? "刷新"}
+            </button>
+          </div>
+        </label>
+
+        {props.error ? <div className="error-banner auth-error">{props.error}</div> : null}
+
+        <button
+          className="primary-button"
+          onClick={() => props.onSubmit({ username, password, captchaCode })}
+          disabled={props.submitting || props.loading || !props.captcha}
+        >
+          {props.submitting ? "提交中" : "登录 / 注册"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [authUser, setAuthUser] = useState<AuthResponse | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [captcha, setCaptcha] = useState<AuthCaptcha | null>(null);
+
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [documents, setDocuments] = useState<DocumentStatus[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
@@ -355,12 +153,16 @@ export default function App() {
     answer: string;
     sources: SourceReference[];
   } | null>(null);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setPinnedSessionIds(getStoredPinnedSessions());
-    void bootstrap();
+    void bootstrapAuth();
   }, []);
 
   useEffect(() => {
@@ -373,15 +175,9 @@ export default function App() {
       : undefined;
 
   const messages = useMemo(
-    () => buildLocalMessages(selectedSession, activeAnswerMeta),
+    () => buildMessages(selectedSession, activeAnswerMeta),
     [activeAnswerMeta, selectedSession]
   );
-
-  const { streamingMessageId, streamingText } = useStreamingText(messages);
-
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, sending, streamingText]);
 
   const latestSources =
     [...messages].reverse().find((message) => message.sources?.length)?.sources ?? [];
@@ -392,16 +188,48 @@ export default function App() {
   ).length;
 
   useEffect(() => {
-    if (!activeDocuments && !uploading) return;
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, sending]);
+
+  useEffect(() => {
+    if (!authUser || (!activeDocuments && !uploading)) return;
 
     const timer = window.setInterval(() => {
       void refreshDocuments();
     }, 3000);
-
     return () => window.clearInterval(timer);
-  }, [activeDocuments, uploading]);
+  }, [activeDocuments, authUser, uploading]);
 
-  async function bootstrap() {
+  async function refreshCaptcha() {
+    const nextCaptcha = await api.getCaptcha();
+    setCaptcha(nextCaptcha);
+  }
+
+  async function bootstrapAuth() {
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      await refreshCaptcha();
+      const token = window.localStorage.getItem("inote-auth-token");
+      if (!token) {
+        api.setToken("");
+        setAuthUser(null);
+        return;
+      }
+
+      api.setToken(token);
+      const user = await api.me();
+      setAuthUser(user);
+      await bootstrapWorkspace();
+    } catch {
+      api.setToken("");
+      setAuthUser(null);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function bootstrapWorkspace() {
     setLoading(true);
     setError("");
     try {
@@ -415,16 +243,56 @@ export default function App() {
       const firstSessionId = sessionList[0]?.id ?? "";
       setSelectedSessionId(firstSessionId);
       if (firstSessionId) {
-        const session = await api.getSession(firstSessionId);
-        setSelectedSession(session);
+        setSelectedSession(await api.getSession(firstSessionId));
+      } else {
+        setSelectedSession(null);
       }
     } catch (bootstrapError) {
-      setError(
-        bootstrapError instanceof Error ? bootstrapError.message : "初始化失败"
-      );
+      setError(bootstrapError instanceof Error ? bootstrapError.message : "初始化失败");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleLogin(payload: {
+    username: string;
+    password: string;
+    captchaCode: string;
+  }) {
+    if (!captcha) return;
+    setAuthSubmitting(true);
+    setAuthError("");
+    try {
+      const user = await api.login({
+        username: payload.username,
+        password: payload.password,
+        captchaId: captcha.captchaId,
+        captchaCode: payload.captchaCode
+      });
+      api.setToken(user.token);
+      setAuthUser(user);
+      await bootstrapWorkspace();
+      await refreshCaptcha();
+    } catch (loginError) {
+      setAuthError(loginError instanceof Error ? loginError.message : "登录失败");
+      await refreshCaptcha();
+    } finally {
+      setAuthSubmitting(false);
+    }
+  }
+
+  function handleLogout() {
+    api.setToken("");
+    setAuthUser(null);
+    setSessions([]);
+    setDocuments([]);
+    setSelectedSessionId("");
+    setSelectedSession(null);
+    setLatestAnswerMeta(null);
+    setComposer("");
+    setError("");
+    setPasswordDialogOpen(false);
+    void refreshCaptcha();
   }
 
   async function refreshSessions(targetId?: string) {
@@ -438,8 +306,7 @@ export default function App() {
 
     setSelectedSessionId(nextId);
     if (nextId) {
-      const session = await api.getSession(nextId);
-      setSelectedSession(session);
+      setSelectedSession(await api.getSession(nextId));
     } else {
       setSelectedSession(null);
     }
@@ -447,8 +314,7 @@ export default function App() {
 
   async function refreshDocuments() {
     try {
-      const documentList = await api.listDocuments();
-      setDocuments(documentList);
+      setDocuments(await api.listDocuments());
     } catch (documentError) {
       setError(documentError instanceof Error ? documentError.message : "刷新文档失败");
     }
@@ -459,8 +325,7 @@ export default function App() {
     setSidebarOpen(false);
     setError("");
     try {
-      const session = await api.getSession(sessionId);
-      setSelectedSession(session);
+      setSelectedSession(await api.getSession(sessionId));
     } catch (sessionError) {
       setError(sessionError instanceof Error ? sessionError.message : "加载会话失败");
     }
@@ -485,25 +350,10 @@ export default function App() {
 
     setSending(true);
     setError("");
-
     const now = new Date().toISOString();
-    const pendingUserMessage: LocalChatMessage = {
-      id: `local-user-${Date.now()}`,
-      role: "user",
-      content: question,
-      createdAt: now,
-      pending: true
-    };
-    const pendingAssistantMessage: LocalChatMessage = {
-      id: `local-assistant-${Date.now()}`,
-      role: "assistant",
-      content: "正在检索知识库并整理回答…",
-      createdAt: now,
-      pending: true
-    };
     const baseSession: ChatSession = selectedSession ?? {
       id: selectedSessionId || "draft",
-      title: "新对话",
+      title: "新会话",
       createdAt: now,
       updatedAt: now,
       messages: []
@@ -511,7 +361,16 @@ export default function App() {
 
     setSelectedSession({
       ...baseSession,
-      messages: [...baseSession.messages, pendingUserMessage, pendingAssistantMessage]
+      messages: [
+        ...baseSession.messages,
+        { id: `u-${Date.now()}`, role: "user", content: question, createdAt: now },
+        {
+          id: `a-${Date.now()}`,
+          role: "assistant",
+          content: "正在检索你的知识文档并生成回答...",
+          createdAt: now
+        }
+      ]
     });
     setComposer("");
 
@@ -527,8 +386,7 @@ export default function App() {
       setError(queryError instanceof Error ? queryError.message : "发送失败");
       if (selectedSessionId) {
         try {
-          const session = await api.getSession(selectedSessionId);
-          setSelectedSession(session);
+          setSelectedSession(await api.getSession(selectedSessionId));
         } catch {
           setSelectedSession(null);
         }
@@ -560,13 +418,12 @@ export default function App() {
   async function handleRenameSubmit(sessionId: string) {
     const title = renameDraft.trim();
     if (!title) return;
-
     setError("");
     try {
-      const updatedSession = await api.updateSession(sessionId, title);
+      const updated = await api.updateSession(sessionId, title);
       setRenamingId("");
       setRenameDraft("");
-      await refreshSessions(updatedSession.id);
+      await refreshSessions(updated.id);
     } catch (renameError) {
       setError(renameError instanceof Error ? renameError.message : "重命名失败");
     }
@@ -586,6 +443,22 @@ export default function App() {
     }
   }
 
+  async function handleResetPassword() {
+    setPasswordSubmitting(true);
+    setError("");
+    try {
+      const response = await api.resetPassword(newPassword, confirmPassword);
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordDialogOpen(false);
+      setError(response.message);
+    } catch (passwordError) {
+      setError(passwordError instanceof Error ? passwordError.message : "密码重置失败");
+    } finally {
+      setPasswordSubmitting(false);
+    }
+  }
+
   function togglePinSession(sessionId: string) {
     setPinnedSessionIds((current) =>
       current.includes(sessionId)
@@ -595,22 +468,31 @@ export default function App() {
   }
 
   const filteredSessions = useMemo(() => {
-    const normalizedQuery = sessionQuery.trim().toLowerCase();
-    const filtered = normalizedQuery
-      ? sessions.filter((session) => session.title.toLowerCase().includes(normalizedQuery))
+    const normalized = sessionQuery.trim().toLowerCase();
+    const filtered = normalized
+      ? sessions.filter((session) => session.title.toLowerCase().includes(normalized))
       : sessions;
 
-    return filtered
-      .slice()
-      .sort((left, right) => {
-        const leftPinned = pinnedSessionIds.includes(left.id) ? 1 : 0;
-        const rightPinned = pinnedSessionIds.includes(right.id) ? 1 : 0;
-        if (leftPinned !== rightPinned) return rightPinned - leftPinned;
-        return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
-      });
+    return filtered.slice().sort((left, right) => {
+      const leftPinned = pinnedSessionIds.includes(left.id) ? 1 : 0;
+      const rightPinned = pinnedSessionIds.includes(right.id) ? 1 : 0;
+      if (leftPinned !== rightPinned) return rightPinned - leftPinned;
+      return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+    });
   }, [pinnedSessionIds, sessionQuery, sessions]);
 
-  const hasSearchResult = filteredSessions.length > 0;
+  if (!authUser) {
+    return (
+      <AuthView
+        captcha={captcha}
+        loading={authLoading}
+        submitting={authSubmitting}
+        error={authError}
+        onRefresh={() => void refreshCaptcha()}
+        onSubmit={(payload) => void handleLogin(payload)}
+      />
+    );
+  }
 
   return (
     <div className="app-shell">
@@ -621,6 +503,11 @@ export default function App() {
             <p className="eyebrow">Knowledge Copilot</p>
             <h1>inote</h1>
           </div>
+        </div>
+
+        <div className="user-badge">
+          <strong>{authUser.username}</strong>
+          <span>只访问自己的知识和会话</span>
         </div>
 
         <button className="primary-button" onClick={() => void handleNewSession()}>
@@ -641,7 +528,7 @@ export default function App() {
         </div>
 
         <div className="session-list">
-          {!hasSearchResult ? (
+          {filteredSessions.length === 0 ? (
             <div className="empty-tile compact">
               {sessionQuery ? "没有匹配的会话。" : "还没有会话，先发起第一轮问答。"}
             </div>
@@ -651,9 +538,7 @@ export default function App() {
               return (
                 <article
                   key={session.id}
-                  className={`session-card ${
-                    session.id === selectedSessionId ? "active" : ""
-                  }`}
+                  className={`session-card ${session.id === selectedSessionId ? "active" : ""}`}
                 >
                   {renamingId === session.id ? (
                     <>
@@ -672,12 +557,7 @@ export default function App() {
                       />
                       <div className="session-actions">
                         <button onClick={() => void handleRenameSubmit(session.id)}>保存</button>
-                        <button
-                          onClick={() => {
-                            setRenamingId("");
-                            setRenameDraft("");
-                          }}
-                        >
+                        <button onClick={() => { setRenamingId(""); setRenameDraft(""); }}>
                           取消
                         </button>
                       </div>
@@ -699,17 +579,10 @@ export default function App() {
                         <button onClick={() => togglePinSession(session.id)}>
                           {pinned ? "取消固定" : "固定"}
                         </button>
-                        <button
-                          onClick={() => {
-                            setRenamingId(session.id);
-                            setRenameDraft(session.title);
-                          }}
-                        >
+                        <button onClick={() => { setRenamingId(session.id); setRenameDraft(session.title); }}>
                           重命名
                         </button>
-                        <button onClick={() => void handleDeleteSession(session.id)}>
-                          删除
-                        </button>
+                        <button onClick={() => void handleDeleteSession(session.id)}>删除</button>
                       </div>
                     </>
                   )}
@@ -722,10 +595,7 @@ export default function App() {
 
       <main className="main-panel">
         <div className="topbar">
-          <button
-            className="icon-button mobile-only"
-            onClick={() => setSidebarOpen((value) => !value)}
-          >
+          <button className="icon-button mobile-only" onClick={() => setSidebarOpen((v) => !v)}>
             菜单
           </button>
           <div>
@@ -736,31 +606,61 @@ export default function App() {
             <span>{completedDocuments} 已入库</span>
             <span>{sessions.length} 会话</span>
             {activeDocuments ? <span>{activeDocuments} 文档处理中</span> : null}
+            <button className="text-button" onClick={() => setPasswordDialogOpen(true)}>忘记密码</button>
+            <button className="text-button" onClick={handleLogout}>退出登录</button>
           </div>
         </div>
 
         {error ? <div className="error-banner">{error}</div> : null}
 
+        {passwordDialogOpen ? (
+          <section className="password-card">
+            <div className="panel-header">
+              <span>重置密码</span>
+              <button className="text-button" onClick={() => setPasswordDialogOpen(false)}>
+                关闭
+              </button>
+            </div>
+            <div className="password-grid">
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                placeholder="输入新密码"
+              />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="确认新密码"
+              />
+              <button
+                className="primary-button"
+                onClick={() => void handleResetPassword()}
+                disabled={passwordSubmitting}
+              >
+                {passwordSubmitting ? "提交中" : "提交"}
+              </button>
+            </div>
+          </section>
+        ) : null}
+
         <section className="chat-panel">
           {loading ? (
-            <div className="empty-state">正在加载数据…</div>
+            <div className="empty-state">正在加载数据...</div>
           ) : messages.length === 0 ? (
             <div className="hero-card">
               <div className="hero-copy">
                 <p className="eyebrow">Inote AI Workspace</p>
                 <h3>把文档、知识与问答放进同一个工作台</h3>
                 <p>
-                  上传 PDF、Word、Excel、TXT 或 CSV 后，直接围绕资料提问。回答会附带来源引用，适合做总结、检索、对比和写作草稿。
+                  已登录用户只能查看自己的文档和会话。上传文件后，直接围绕资料提问，
+                  回答会附带来源引用。
                 </p>
               </div>
-
               <div className="prompt-grid">
                 {QUICK_PROMPTS.map((prompt) => (
-                  <button
-                    key={prompt}
-                    className="prompt-card"
-                    onClick={() => void handleSend(prompt)}
-                  >
+                  <button key={prompt} className="prompt-card" onClick={() => void handleSend(prompt)}>
                     {prompt}
                   </button>
                 ))}
@@ -771,21 +671,22 @@ export default function App() {
               {messages.map((message) => (
                 <article
                   key={message.id}
-                  className={`message ${message.role.toLowerCase()} ${
-                    message.pending ? "pending" : ""
-                  }`}
+                  className={`message ${message.role.toLowerCase()} ${message.pending ? "pending" : ""}`}
                 >
                   <div className="message-label">
-                    {message.role.toLowerCase() === "user" ? "你" : "inote"}
+                    {message.role.toLowerCase() === "user" ? authUser.username : "inote"}
                     <time>{formatTime(message.createdAt)}</time>
                   </div>
-                  <MessageContent
-                    message={message}
-                    streamingText={
-                      message.id === streamingMessageId ? streamingText : undefined
-                    }
-                  />
-                  {message.sources?.length ? <SourcePreview sources={message.sources} /> : null}
+                  <div className="message-body plain-body">{message.content}</div>
+                  {message.sources?.length ? (
+                    <div className="inline-sources">
+                      {message.sources.map((source) => (
+                        <a key={`${source.fileName}-${source.url}`} href={source.url} target="_blank" rel="noreferrer">
+                          {source.fileName}
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
                 </article>
               ))}
               <div ref={messageEndRef} />
@@ -808,12 +709,8 @@ export default function App() {
           />
           <div className="composer-actions">
             <span>Enter 发送，Shift + Enter 换行</span>
-            <button
-              className="primary-button"
-              onClick={() => void handleSend()}
-              disabled={sending}
-            >
-              {sending ? "生成中…" : "发送"}
+            <button className="primary-button" onClick={() => void handleSend()} disabled={sending}>
+              {sending ? "生成中" : "发送"}
             </button>
           </div>
         </div>
@@ -825,9 +722,7 @@ export default function App() {
             <span>知识库</span>
             <span>{documents.length}</span>
           </div>
-          <p className="panel-copy">
-            支持 PDF、Word、Excel、TXT、CSV。上传后由后端解析并进入向量检索。
-          </p>
+          <p className="panel-copy">支持 PDF、Word、Excel、TXT、CSV。</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -835,18 +730,11 @@ export default function App() {
             hidden
             onChange={(event) => void handleUpload(event.target.files)}
           />
-          <button
-            className="primary-button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? "上传中…" : "上传文件"}
+          <button className="primary-button" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            {uploading ? "上传中" : "上传文件"}
           </button>
-          {activeDocuments ? (
-            <p className="panel-tip">检测到文档仍在处理，列表会自动轮询刷新。</p>
-          ) : null}
+          {activeDocuments ? <p className="panel-tip">检测到文档仍在处理，列表会自动轮询刷新。</p> : null}
         </section>
-
         <section className="knowledge-card">
           <div className="panel-header">
             <span>文档状态</span>
@@ -860,9 +748,7 @@ export default function App() {
             ) : (
               documents
                 .slice()
-                .sort(
-                  (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-                )
+                .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                 .map((document) => (
                   <article key={document.documentId} className="document-card">
                     <div className="document-title-row">
@@ -891,7 +777,7 @@ export default function App() {
           </div>
           <div className="source-list">
             {latestSources.length === 0 ? (
-              <div className="empty-tile compact">发送问题后，这里会展示本轮回答的来源。</div>
+              <div className="empty-tile compact">发送问题后，这里会显示本轮回答的来源。</div>
             ) : (
               latestSources.map((source) => (
                 <a

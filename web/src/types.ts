@@ -3,6 +3,16 @@ export interface SourceReference {
   url: string;
 }
 
+export interface AuthCaptcha {
+  captchaId: string;
+  captchaCode: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  username: string;
+}
+
 export interface InoteResponse {
   sessionId: string;
   answer: string;
