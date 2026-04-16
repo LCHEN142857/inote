@@ -7,8 +7,10 @@ import com.inote.model.dto.ChatSessionSummaryResponse;
 import com.inote.model.dto.ChatSessionUpdateRequest;
 import com.inote.model.entity.ChatMessage;
 import com.inote.model.entity.ChatSession;
+import com.inote.model.entity.User;
 import com.inote.repository.ChatMessageRepository;
 import com.inote.repository.ChatSessionRepository;
+import com.inote.security.CurrentUserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,11 +28,14 @@ public class ChatSessionService {
 
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final CurrentUserService currentUserService;
 
     @Transactional
     public ChatSessionResponse createSession(ChatSessionCreateRequest request) {
+        User user = currentUserService.getCurrentUser();
         ChatSession session = ChatSession.builder()
                 .title(resolveTitle(request == null ? null : request.getTitle()))
+                .owner(user)
                 .build();
         ChatSession saved = chatSessionRepository.save(session);
         return toResponse(saved, List.of());
@@ -38,7 +43,8 @@ public class ChatSessionService {
 
     @Transactional(readOnly = true)
     public List<ChatSessionSummaryResponse> listSessions() {
-        List<ChatSession> sessions = chatSessionRepository.findAllByOrderByUpdatedAtDesc();
+        User user = currentUserService.getCurrentUser();
+        List<ChatSession> sessions = chatSessionRepository.findAllByOwnerIdOrderByUpdatedAtDesc(user.getId());
         Map<String, Long> messageCounts = loadMessageCounts(sessions);
 
         return sessions.stream()
@@ -68,7 +74,8 @@ public class ChatSessionService {
 
     @Transactional
     public void deleteSession(String sessionId) {
-        if (!chatSessionRepository.existsById(sessionId)) {
+        User user = currentUserService.getCurrentUser();
+        if (!chatSessionRepository.existsByIdAndOwnerId(sessionId, user.getId())) {
             throw new EntityNotFoundException("Session not found: " + sessionId);
         }
         chatSessionRepository.deleteById(sessionId);
@@ -76,7 +83,8 @@ public class ChatSessionService {
 
     @Transactional(readOnly = true)
     public ChatSession getSessionEntity(String sessionId) {
-        return chatSessionRepository.findById(sessionId)
+        User user = currentUserService.getCurrentUser();
+        return chatSessionRepository.findByIdAndOwnerId(sessionId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Session not found: " + sessionId));
     }
 

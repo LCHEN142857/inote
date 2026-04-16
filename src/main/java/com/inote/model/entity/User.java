@@ -1,12 +1,8 @@
 package com.inote.model.entity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -16,11 +12,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -29,26 +22,23 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "chat_sessions")
+@Table(name = "users")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString(exclude = "messages")
-public class ChatSession {
+public class User {
 
     @Id
     @EqualsAndHashCode.Include
     @Column(length = 36, nullable = false, updatable = false)
     private String id;
 
-    @Column(nullable = false, length = 255)
-    private String title;
+    @Column(nullable = false, unique = true, length = 64)
+    private String username;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
+    @Column(nullable = false, length = 128)
+    private String passwordHash;
 
-    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ChatMessage> messages = new ArrayList<>();
+    @Column(nullable = false, unique = true, length = 64)
+    private String authToken;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
