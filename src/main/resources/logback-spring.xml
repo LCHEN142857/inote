@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty name="APP_NAME" source="spring.application.name" defaultValue="inote"/>
+
+    <conversionRule conversionWord="packageName" converterClass="com.inote.logging.PackageNameConverter"/>
+    <conversionRule conversionWord="runtimeEndpoint" converterClass="com.inote.logging.RuntimeEndpointConverter"/>
+
+    <property name="LOG_FILE" value="/app/inote/logs/server/inote-server.log"/>
+    <property name="ARCHIVE_PATTERN" value="/app/inote/logs/%d{yyyy/MM/dd}/inote-server-%i.log.gz"/>
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss} [%X{endpointId:-N/A}] [%runtimeEndpoint] [%X{traceId:-N/A}] [%packageName] [%method] %msg%n"/>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <append>true</append>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${ARCHIVE_PATTERN}</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>365</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <logger name="com.inote" level="DEBUG"/>
+    <logger name="org.springframework.ai" level="DEBUG"/>
+</configuration>
