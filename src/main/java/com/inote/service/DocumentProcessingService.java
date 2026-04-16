@@ -51,6 +51,7 @@ public class DocumentProcessingService {
             metadata.put("file_name", document.getFileName());
             metadata.put("file_url", fileUrl);
             metadata.put("content_type", document.getContentType());
+            metadata.put("owner_id", document.getOwner().getId());
 
             embeddingService.embedAndStore(chunks, metadata);
 

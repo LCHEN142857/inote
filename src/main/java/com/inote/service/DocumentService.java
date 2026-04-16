@@ -3,7 +3,9 @@ package com.inote.service;
 import com.inote.model.dto.DocumentStatusResponse;
 import com.inote.model.dto.DocumentUploadResponse;
 import com.inote.model.entity.Document;
+import com.inote.model.entity.User;
 import com.inote.repository.DocumentRepository;
+import com.inote.security.CurrentUserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,7 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final DocumentProcessingService processingService;
+    private final CurrentUserService currentUserService;
 
     @Value("${file.upload.path:./uploads}")
     private String uploadPath;
@@ -34,20 +37,24 @@ public class DocumentService {
     public DocumentUploadResponse uploadDocument(MultipartFile file) {
         try {
             validateFile(file);
+            User user = currentUserService.getCurrentUser();
 
             Path savedPath = processingService.saveFile(file, uploadPath);
-            String fileUrl = "/api/v1/documents/files/" + savedPath.getFileName();
 
             Document document = Document.builder()
                     .fileName(file.getOriginalFilename())
                     .filePath(savedPath.toString())
-                    .fileUrl(fileUrl)
+                    .fileUrl("")
+                    .owner(user)
                     .contentType(file.getContentType())
                     .fileSize(file.getSize())
                     .status("PARSING")
                     .build();
 
             document = documentRepository.save(document);
+            String fileUrl = "/api/v1/documents/files/" + document.getId();
+            document.setFileUrl(fileUrl);
+            documentRepository.save(document);
             processingService.processDocumentAsync(document, file, fileUrl);
 
             return DocumentUploadResponse.builder()
@@ -76,13 +83,19 @@ public class DocumentService {
     }
 
     public List<DocumentStatusResponse> listDocuments() {
-        return documentRepository.findAllByOrderByUpdatedAtDesc().stream()
+        User user = currentUserService.getCurrentUser();
+        return documentRepository.findAllByOwnerIdOrderByUpdatedAtDesc(user.getId()).stream()
                 .map(this::toStatusResponse)
                 .toList();
     }
 
+    public Document getOwnedDocument(String documentId) {
+        return findDocument(documentId);
+    }
+
     private Document findDocument(String documentId) {
-        return documentRepository.findById(documentId)
+        User user = currentUserService.getCurrentUser();
+        return documentRepository.findByIdAndOwnerId(documentId, user.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Document not found: " + documentId));
     }
 

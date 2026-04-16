@@ -129,6 +129,12 @@ public class BM25SearchService {
         return results;
     }
 
+    public List<BM25Result> search(String queryText, int topK, String ownerId) {
+        return search(queryText, topK).stream()
+                .filter(result -> ownerId.equals(String.valueOf(result.metadata().get("owner_id"))))
+                .toList();
+    }
+
     @PreDestroy
     public void close() {
         try {

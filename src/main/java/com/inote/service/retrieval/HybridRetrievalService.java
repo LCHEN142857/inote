@@ -1,6 +1,7 @@
 package com.inote.service.retrieval;
 
 import com.inote.config.RagProperties;
+import com.inote.security.CurrentUserService;
 import com.inote.service.EmbeddingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +22,15 @@ public class HybridRetrievalService {
     private final EmbeddingService embeddingService;
     private final BM25SearchService bm25SearchService;
     private final RagProperties ragProperties;
+    private final CurrentUserService currentUserService;
 
     public List<Document> retrieve(String query) {
         int vectorTopK = ragProperties.getVectorTopK();
+        String ownerId = currentUserService.getCurrentUser().getId();
 
         // 向量检索
         List<Document> vectorResults = embeddingService.searchSimilarDocuments(
-                query, vectorTopK, ragProperties.getSimilarityThreshold());
+                query, vectorTopK, ragProperties.getSimilarityThreshold(), ownerId);
         log.debug("Vector search returned {} results", vectorResults.size());
 
         if (!ragProperties.isHybridSearchEnabled()) {
@@ -38,7 +41,7 @@ public class HybridRetrievalService {
         int bm25TopK = ragProperties.getBm25TopK();
         List<BM25SearchService.BM25Result> bm25Results;
         try {
-            bm25Results = bm25SearchService.search(query, bm25TopK);
+            bm25Results = bm25SearchService.search(query, bm25TopK, ownerId);
             log.debug("BM25 search returned {} results", bm25Results.size());
         } catch (Exception e) {
             log.warn("BM25 search failed, using vector-only results: {}", e.getMessage());

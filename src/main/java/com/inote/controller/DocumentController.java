@@ -2,6 +2,7 @@ package com.inote.controller;
 
 import com.inote.model.dto.DocumentStatusResponse;
 import com.inote.model.dto.DocumentUploadResponse;
+import com.inote.model.entity.Document;
 import com.inote.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,25 +55,26 @@ public class DocumentController {
         return ResponseEntity.ok(documentService.getDocumentStatus(documentId));
     }
 
-    @GetMapping("/files/{filename:.+}")
-    public ResponseEntity<Resource> getFile(@PathVariable String filename) {
+    @GetMapping("/files/{documentId}")
+    public ResponseEntity<Resource> getFile(@PathVariable String documentId) {
         try {
+            Document document = documentService.getOwnedDocument(documentId);
             Path uploadRoot = Paths.get(uploadPath).toAbsolutePath().normalize();
-            Path filePath = uploadRoot.resolve(filename).normalize();
+            Path filePath = Paths.get(document.getFilePath()).toAbsolutePath().normalize();
             if (!filePath.startsWith(uploadRoot)) {
-                log.warn("Blocked file access outside upload directory: {}", filename);
+                log.warn("Blocked file access outside upload directory: {}", documentId);
                 return ResponseEntity.badRequest().build();
             }
 
             Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists() && resource.isReadable()) {
                 return ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + document.getFileName() + "\"")
                         .body(resource);
             }
             return ResponseEntity.notFound().build();
         } catch (MalformedURLException e) {
-            log.error("Invalid file path: {}", filename, e);
+            log.error("Invalid file path for document: {}", documentId, e);
             return ResponseEntity.badRequest().build();
         }
     }
