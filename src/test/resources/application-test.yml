@@ -1,0 +1,48 @@
+# 指定测试环境的 Spring 根配置节点。
+spring:
+  # 指定测试环境的数据源配置节点。
+  datasource:
+    # 指定测试使用 H2 内存数据库并启用 PostgreSQL 兼容模式。
+    url: jdbc:h2:mem:inote;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    # 指定测试数据库用户名。
+    username: sa
+    # 指定测试数据库密码为空字符串。
+    password: ""
+    # 指定测试数据库驱动。
+    driver-class-name: org.h2.Driver
+  # 指定测试环境的 JPA 配置节点。
+  jpa:
+    # 指定 Hibernate 的自动建表策略。
+    hibernate:
+      # 指定测试上下文启动时创建并在结束时销毁表结构。
+      ddl-auto: create-drop
+    # 指定 JPA 额外属性配置节点。
+    properties:
+      # 指定 Hibernate 属性配置节点。
+      hibernate:
+        # 指定测试环境使用 H2 方言。
+        dialect: org.hibernate.dialect.H2Dialect
+  # 指定测试环境的自动配置排除节点。
+  autoconfigure:
+    # 指定需要排除的外部 AI 与向量库自动配置。
+    exclude:
+      # 排除 OpenAI 聊天自动配置。
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      # 排除 OpenAI 向量自动配置。
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      # 排除 Milvus 向量库自动配置。
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+
+# 指定测试环境的文件配置节点。
+file:
+  # 指定测试环境的上传配置节点。
+  upload:
+    # 指定测试环境使用目标目录下的测试上传路径。
+    path: ./target/test-uploads
+
+# 指定测试环境的日志配置节点。
+logging:
+  # 指定测试环境的日志级别配置节点。
+  level:
+    # 指定应用日志级别为 WARN。
+    com.inote: WARN

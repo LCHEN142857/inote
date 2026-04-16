@@ -125,6 +125,16 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- 添加 H2 测试数据库依赖。 -->
+        <dependency>
+            <!-- 指定 H2 依赖组织。 -->
+            <groupId>com.h2database</groupId>
+            <!-- 指定 H2 依赖名称。 -->
+            <artifactId>h2</artifactId>
+            <!-- 指定依赖仅用于测试范围。 -->
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
