@@ -1,29 +1,24 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-// 应用当前注解。
+// 应用 `SpringBootApplication` 注解声明当前行为。
 @SpringBootApplication
-// 应用当前注解。
+// 应用 `EnableAsync` 注解声明当前行为。
 @EnableAsync
-// 声明当前类型。
+// 定义 Spring Boot 应用启动入口。
 public class InoteApplication {
 
     /**
-     * 描述 `main` 操作。
-     *
-     * @param args 输入参数 `args`。
-     * @return 无返回值。
+     * 处理main相关逻辑。
+     * @param args args参数。
      */
-    // 处理当前代码结构。
     public static void main(String[] args) {
-        // 执行当前语句。
+        // 定义当前类型。
         SpringApplication.run(InoteApplication.class, args);
-    // 结束当前代码块。
     }
 
-// 结束当前代码块。
 }

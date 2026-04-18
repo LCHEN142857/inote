@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.model.dto;
 
 import lombok.AllArgsConstructor;
@@ -9,26 +9,25 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
-// 应用当前注解。
+// 让 Lombok 为当前类型生成常用访问方法。
 @Data
-// 应用当前注解。
+// 让 Lombok 为当前类型生成建造者。
 @Builder
-// 应用当前注解。
+// 让 Lombok 生成无参构造函数。
 @NoArgsConstructor
-// 应用当前注解。
+// 让 Lombok 生成全参构造函数。
 @AllArgsConstructor
-// 声明当前类型。
+// 定义会话详情响应对象，返回会话及消息列表。
 public class ChatSessionResponse {
 
-    // 声明当前字段。
+    // 声明id变量，供后续流程使用。
     private String id;
-    // 声明当前字段。
+    // 声明标题变量，供后续流程使用。
     private String title;
-    // 声明当前字段。
+    // 声明createdat变量，供后续流程使用。
     private LocalDateTime createdAt;
-    // 声明当前字段。
+    // 声明updatedat变量，供后续流程使用。
     private LocalDateTime updatedAt;
-    // 声明当前字段。
+    // 声明消息变量，供后续流程使用。
     private List<ChatMessageResponse> messages;
-// 结束当前代码块。
 }

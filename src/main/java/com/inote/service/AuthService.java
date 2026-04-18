@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.service;
 
 import com.inote.config.AuthProperties;
@@ -23,334 +23,266 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-// 应用当前注解。
+// 将当前类注册为服务组件。
 @Service
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义认证服务，负责验证码校验、登录注册和密码重置逻辑。
 public class AuthService {
 
-    // 声明当前字段。
+    // 计算并保存验证码来源结果。
     private static final String CAPTCHA_SOURCE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    /**
-     * 描述 `Duration.ofMinutes` 操作。
-     *
-     * @param 5 输入参数 `5`。
-     * @return 类型为 `Duration CAPTCHA_TTL =` 的返回值。
-     */
-    // 执行当前语句。
+    // 计算并保存验证码ttl结果。
     private static final Duration CAPTCHA_TTL = Duration.ofMinutes(5);
 
-    // 声明当前字段。
+    // 声明用户repository变量，供后续流程使用。
     private final UserRepository userRepository;
-    // 声明当前字段。
+    // 声明密码encoder变量，供后续流程使用。
     private final PasswordEncoder passwordEncoder;
-    // 声明当前字段。
+    // 声明当前用户service变量，供后续流程使用。
     private final CurrentUserService currentUserService;
-    // 声明当前字段。
+    // 声明认证properties变量，供后续流程使用。
     private final AuthProperties authProperties;
-    /**
-     * 描述 `SecureRandom` 操作。
-     *
-     * @return 类型为 `SecureRandom secureRandom = new` 的返回值。
-     */
-    // 执行当前语句。
+    // 创建securerandom对象。
     private final SecureRandom secureRandom = new SecureRandom();
-    /**
-     * 描述 `ConcurrentHashMap<>` 操作。
-     *
-     * @return 类型为 `Map<String, CaptchaEntry> captchas = new` 的返回值。
-     */
-    // 执行当前语句。
+    // 创建captchas对象。
     private final Map<String, CaptchaEntry> captchas = new ConcurrentHashMap<>();
 
     /**
-     * 描述 `generateCaptcha` 操作。
-     *
-     * @return 类型为 `AuthCaptchaResponse` 的返回值。
+     * 生成一次性验证码并缓存有效期，供登录前校验使用。
+     * @return 认证验证码响应结果。
      */
-    // 处理当前代码结构。
     public AuthCaptchaResponse generateCaptcha() {
-        // 执行当前语句。
+        // 调用 `cleanupExpiredCaptchas` 完成当前步骤。
         cleanupExpiredCaptchas();
-        // 执行当前语句。
+        // 生成验证码id随机值。
         String captchaId = UUID.randomUUID().toString();
-        // 执行当前语句。
+        // 计算并保存验证码code结果。
         String captchaCode = randomAlphaNumeric(authProperties.getCaptchaLength());
-        // 执行当前语句。
+        // 写入当前映射中的键值对。
         captchas.put(captchaId, new CaptchaEntry(captchaCode, LocalDateTime.now().plus(CAPTCHA_TTL)));
-        // 返回当前结果。
+        // 返回组装完成的结果对象。
         return AuthCaptchaResponse.builder()
-                // 处理当前代码结构。
+                // 设置验证码id字段的取值。
                 .captchaId(captchaId)
-                // 处理当前代码结构。
+                // 设置验证码code字段的取值。
                 .captchaCode(captchaCode)
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `loginOrRegister` 操作。
-     *
-     * @param request 输入参数 `request`。
-     * @return 类型为 `AuthResponse` 的返回值。
+     * 校验验证码后执行登录或自动注册，并刷新用户令牌。
+     * @param request 请求参数。
+     * @return 认证响应结果。
      */
-    // 处理当前代码结构。
     public AuthResponse loginOrRegister(AuthLoginRequest request) {
-        // 执行当前语句。
+        // 调用 `validateCaptcha` 完成当前步骤。
         validateCaptcha(request.getCaptchaId(), request.getCaptchaCode());
 
-        // 执行当前语句。
+        // 计算并保存username结果。
         String username = normalizeUsername(request.getUsername());
-        // 执行当前语句。
+        // 清理并规范化密码内容。
         String password = request.getPassword().trim();
-        // 执行当前语句。
+        // 调用 `validatePassword` 完成当前步骤。
         validatePassword(password);
 
-        // 处理当前代码结构。
+        // 围绕用户用户用户补充当前业务语句。
         User user = userRepository.findByUsername(username)
-                // 处理当前代码结构。
+                // 设置map字段的取值。
                 .map(existing -> validateLogin(existing, password))
-                // 执行当前语句。
+                // 设置orelseget字段的取值。
                 .orElseGet(() -> registerUser(username, password));
 
-        // 执行当前语句。
+        // 更新认证令牌字段。
         user.setAuthToken(generateAuthToken());
-        // 执行当前语句。
+        // 保存saved对象。
         User saved = userRepository.save(user);
-        // 返回当前结果。
+        // 返回组装完成的结果对象。
         return AuthResponse.builder()
-                // 处理当前代码结构。
+                // 设置令牌字段的取值。
                 .token(saved.getAuthToken())
-                // 处理当前代码结构。
+                // 设置username字段的取值。
                 .username(saved.getUsername())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `currentUser` 操作。
-     *
-     * @return 类型为 `AuthResponse` 的返回值。
+     * 读取当前登录用户并组装认证响应。
+     * @return 认证响应结果。
      */
-    // 处理当前代码结构。
     public AuthResponse currentUser() {
-        // 执行当前语句。
+        // 获取当前登录用户。
         User user = currentUserService.getCurrentUser();
-        // 返回当前结果。
+        // 返回组装完成的结果对象。
         return AuthResponse.builder()
-                // 处理当前代码结构。
+                // 设置令牌字段的取值。
                 .token(user.getAuthToken())
-                // 处理当前代码结构。
+                // 设置username字段的取值。
                 .username(user.getUsername())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `resetPassword` 操作。
-     *
-     * @param request 输入参数 `request`。
-     * @return 无返回值。
+     * 校验新密码后更新当前用户密码并刷新登录令牌。
+     * @param request 请求参数。
      */
-    // 处理当前代码结构。
     public void resetPassword(ResetPasswordRequest request) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("The two password entries do not match.");
-        // 结束当前代码块。
         }
-        // 执行当前语句。
+        // 调用 `validatePassword` 完成当前步骤。
         validatePassword(request.getNewPassword());
 
-        // 执行当前语句。
+        // 获取当前登录用户。
         User user = currentUserService.getCurrentUser();
-        // 执行当前语句。
+        // 更新密码hash字段。
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword().trim()));
-        // 执行当前语句。
+        // 更新认证令牌字段。
         user.setAuthToken(generateAuthToken());
-        // 执行当前语句。
+        // 保存当前对象到持久化层。
         userRepository.save(user);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `registerUser` 操作。
-     *
-     * @param username 输入参数 `username`。
-     * @param password 输入参数 `password`。
-     * @return 类型为 `User` 的返回值。
+     * 处理注册用户相关逻辑。
+     * @param username username参数。
+     * @param password 密码参数。
+     * @return 用户结果。
      */
-    // 处理当前代码结构。
     private User registerUser(String username, String password) {
-        // 返回当前结果。
+        // 返回组装完成的结果对象。
         return User.builder()
-                // 处理当前代码结构。
+                // 设置username字段的取值。
                 .username(username)
-                // 处理当前代码结构。
+                // 设置密码hash字段的取值。
                 .passwordHash(passwordEncoder.encode(password))
-                // 处理当前代码结构。
+                // 设置认证令牌字段的取值。
                 .authToken(generateAuthToken())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `validateLogin` 操作。
-     *
-     * @param user 输入参数 `user`。
-     * @param password 输入参数 `password`。
-     * @return 类型为 `User` 的返回值。
+     * 处理validate登录相关逻辑。
+     * @param user 用户参数。
+     * @param password 密码参数。
+     * @return 用户结果。
      */
-    // 处理当前代码结构。
     private User validateLogin(User user, String password) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            // 抛出当前异常。
+            // 抛出 `UnauthorizedException` 异常中断当前流程。
             throw new UnauthorizedException("Username or password is incorrect.");
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回用户。
         return user;
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `validateCaptcha` 操作。
-     *
-     * @param captchaId 输入参数 `captchaId`。
-     * @param captchaCode 输入参数 `captchaCode`。
-     * @return 无返回值。
+     * 处理validate验证码相关逻辑。
+     * @param captchaId 验证码id参数。
+     * @param captchaCode 验证码code参数。
      */
-    // 处理当前代码结构。
     private void validateCaptcha(String captchaId, String captchaCode) {
-        // 执行当前语句。
+        // 调用 `cleanupExpiredCaptchas` 完成当前步骤。
         cleanupExpiredCaptchas();
-        // 执行当前语句。
+        // 计算并保存entry结果。
         CaptchaEntry entry = captchas.remove(captchaId);
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (entry == null || entry.expiresAt().isBefore(LocalDateTime.now())) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("Captcha has expired. Please refresh and try again.");
-        // 结束当前代码块。
         }
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!entry.code().equalsIgnoreCase(captchaCode.trim())) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("Captcha is incorrect.");
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `cleanupExpiredCaptchas` 操作。
-     *
-     * @return 无返回值。
+     * 处理cleanupexpiredcaptchas相关逻辑。
      */
-    // 处理当前代码结构。
     private void cleanupExpiredCaptchas() {
-        // 执行当前语句。
+        // 计算并保存now结果。
         LocalDateTime now = LocalDateTime.now();
-        // 执行当前语句。
+        // 调用 `entrySet` 完成当前步骤。
         captchas.entrySet().removeIf(entry -> entry.getValue().expiresAt().isBefore(now));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `normalizeUsername` 操作。
-     *
-     * @param username 输入参数 `username`。
-     * @return 类型为 `String` 的返回值。
+     * 处理normalizeusername相关逻辑。
+     * @param username username参数。
+     * @return 处理后的字符串结果。
      */
-    // 处理当前代码结构。
     private String normalizeUsername(String username) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!StringUtils.hasText(username)) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("Username must not be blank.");
-        // 结束当前代码块。
         }
-        // 执行当前语句。
+        // 清理并规范化normalized内容。
         String normalized = username.trim().toLowerCase(Locale.ROOT);
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!normalized.matches("[a-zA-Z0-9_\\-]{3,32}")) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("Username must be 3-32 characters and use letters, numbers, _ or -.");
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回normalized。
         return normalized;
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `validatePassword` 操作。
-     *
-     * @param password 输入参数 `password`。
-     * @return 无返回值。
+     * 处理validate密码相关逻辑。
+     * @param password 密码参数。
      */
-    // 处理当前代码结构。
     private void validatePassword(String password) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!StringUtils.hasText(password) || password.trim().length() < 6) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("Password must be at least 6 characters.");
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `randomAlphaNumeric` 操作。
-     *
-     * @param length 输入参数 `length`。
-     * @return 类型为 `String` 的返回值。
+     * 处理randomalphanumeric相关逻辑。
+     * @param length length参数。
+     * @return 处理后的字符串结果。
      */
-    // 处理当前代码结构。
     private String randomAlphaNumeric(int length) {
-        // 执行当前语句。
+        // 计算并保存actuallength结果。
         int actualLength = Math.max(length, 4);
-        // 执行当前语句。
+        // 创建builder对象。
         StringBuilder builder = new StringBuilder(actualLength);
-        // 执行当前流程控制分支。
+        // 遍历当前集合或区间中的元素。
         for (int i = 0; i < actualLength; i++) {
-            // 执行当前语句。
+            // 调用 `append` 完成当前步骤。
             builder.append(CAPTCHA_SOURCE.charAt(secureRandom.nextInt(CAPTCHA_SOURCE.length())));
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回 `toString` 的处理结果。
         return builder.toString();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `generateAuthToken` 操作。
-     *
-     * @return 类型为 `String` 的返回值。
+     * 处理generate认证令牌相关逻辑。
+     * @return 处理后的字符串结果。
      */
-    // 处理当前代码结构。
     private String generateAuthToken() {
-        // 返回当前结果。
+        // 返回 `randomUUID` 的处理结果。
         return UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `CaptchaEntry` 操作。
-     *
-     * @param code 输入参数 `code`。
-     * @param expiresAt 输入参数 `expiresAt`。
-     * @return 类型为 `record` 的返回值。
+     * 处理验证码entry相关逻辑。
+     * @param code code参数。
+     * @param expiresAt expiresat参数。
+     * @return record结果。
      */
-    // 声明当前类型。
     private record CaptchaEntry(String code, LocalDateTime expiresAt) {
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

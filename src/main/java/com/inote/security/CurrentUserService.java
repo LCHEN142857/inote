@@ -1,24 +1,20 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.security;
 
 import com.inote.model.entity.User;
 import org.springframework.stereotype.Service;
 
-// 应用当前注解。
+// 将当前类注册为服务组件。
 @Service
-// 声明当前类型。
+// 定义当前用户服务，负责读取已认证用户信息。
 public class CurrentUserService {
 
     /**
-     * 描述 `getCurrentUser` 操作。
-     *
-     * @return 类型为 `User` 的返回值。
+     * 处理get当前用户相关逻辑。
+     * @return 用户结果。
      */
-    // 处理当前代码结构。
     public User getCurrentUser() {
-        // 返回当前结果。
+        // 返回 `getRequired` 的处理结果。
         return CurrentUserHolder.getRequired();
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

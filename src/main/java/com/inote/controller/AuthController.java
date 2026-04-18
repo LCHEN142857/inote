@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.controller;
 
 import com.inote.model.dto.AuthCaptchaResponse;
@@ -17,76 +17,63 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-// 应用当前注解。
+// 声明当前类提供 REST 风格接口。
 @RestController
-// 应用当前注解。
+// 声明当前控制器的统一请求路径前缀。
 @RequestMapping("/api/v1/auth")
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义认证接口控制器，负责验证码、登录态和密码重置接口。
 public class AuthController {
 
-    // 声明当前字段。
+    // 声明认证service变量，供后续流程使用。
     private final AuthService authService;
 
     /**
-     * 描述 `captcha` 操作。
-     *
-     * @return 类型为 `ResponseEntity<AuthCaptchaResponse>` 的返回值。
+     * 返回登录前使用的验证码信息。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 GET 请求。
     @GetMapping("/captcha")
-    // 处理当前代码结构。
     public ResponseEntity<AuthCaptchaResponse> captcha() {
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(authService.generateCaptcha());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `login` 操作。
-     *
-     * @param request 输入参数 `request`。
-     * @return 类型为 `ResponseEntity<AuthResponse>` 的返回值。
+     * 处理用户名密码登录请求，并在首次登录时自动注册。
+     * @param request 请求参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 POST 请求。
     @PostMapping("/login")
-    // 处理当前代码结构。
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthLoginRequest request) {
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(authService.loginOrRegister(request));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `me` 操作。
-     *
-     * @return 类型为 `ResponseEntity<AuthResponse>` 的返回值。
+     * 返回当前登录用户的认证信息。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 GET 请求。
     @GetMapping("/me")
-    // 处理当前代码结构。
     public ResponseEntity<AuthResponse> me() {
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(authService.currentUser());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `resetPassword` 操作。
-     *
-     * @param request 输入参数 `request`。
-     * @return 类型为 `ResponseEntity<Map<String, String>>` 的返回值。
+     * 处理当前用户的密码重置请求。
+     * @param request 请求参数。
+     * @return string>>结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 POST 请求。
     @PostMapping("/password/reset")
-    // 处理当前代码结构。
     public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        // 执行当前语句。
+        // 调用 `resetPassword` 完成当前步骤。
         authService.resetPassword(request);
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(Map.of("message", "Password reset successful. Please use the new password next time."));
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

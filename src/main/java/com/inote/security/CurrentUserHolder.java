@@ -1,72 +1,50 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.security;
 
 import com.inote.model.entity.User;
 
-// 处理当前代码结构。
+// 定义当前用户上下文容器，负责在线程内保存认证用户。
 public final class CurrentUserHolder {
 
-    /**
-     * 描述 `ThreadLocal<>` 操作。
-     *
-     * @return 类型为 `ThreadLocal<User> CURRENT_USER = new` 的返回值。
-     */
-    // 执行当前语句。
+    // 创建当前用户对象。
     private static final ThreadLocal<User> CURRENT_USER = new ThreadLocal<>();
 
     /**
-     * 描述 `CurrentUserHolder` 操作。
-     *
-     * @return 构造完成的实例状态。
+     * 处理当前用户holder相关逻辑。
      */
-    // 处理当前代码结构。
     private CurrentUserHolder() {
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `set` 操作。
-     *
-     * @param user 输入参数 `user`。
-     * @return 无返回值。
+     * 处理set相关逻辑。
+     * @param user 用户参数。
      */
-    // 处理当前代码结构。
     public static void set(User user) {
-        // 执行当前语句。
+        // 调用 `set` 完成当前步骤。
         CURRENT_USER.set(user);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getRequired` 操作。
-     *
-     * @return 类型为 `User` 的返回值。
+     * 处理getrequired相关逻辑。
+     * @return 用户结果。
      */
-    // 处理当前代码结构。
     public static User getRequired() {
-        // 执行当前语句。
+        // 计算并保存用户结果。
         User user = CURRENT_USER.get();
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (user == null) {
-            // 抛出当前异常。
+            // 抛出 `UnauthorizedException` 异常中断当前流程。
             throw new UnauthorizedException("Authentication required");
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回用户。
         return user;
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `clear` 操作。
-     *
-     * @return 无返回值。
+     * 处理clear相关逻辑。
      */
-    // 处理当前代码结构。
     public static void clear() {
-        // 执行当前语句。
+        // 调用 `remove` 完成当前步骤。
         CURRENT_USER.remove();
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

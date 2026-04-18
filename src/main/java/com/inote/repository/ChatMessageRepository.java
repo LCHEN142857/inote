@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.repository;
 
 import com.inote.model.entity.ChatMessage;
@@ -7,40 +7,22 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
-// 声明当前类型。
+// 定义消息仓储接口，负责聊天消息的持久化查询。
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, String> {
 
-    /**
-     * 描述 `findBySessionIdOrderByCreatedAtAsc` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @return 类型为 `List<ChatMessage>` 的返回值。
-     */
-    // 执行当前语句。
+    // 调用 `findBySessionIdOrderByCreatedAtAsc` 完成当前步骤。
     List<ChatMessage> findBySessionIdOrderByCreatedAtAsc(String sessionId);
 
-    /**
-     * 描述 `countBySessionId` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @return 类型为 `long` 的返回值。
-     */
-    // 执行当前语句。
+    // 调用 `countBySessionId` 完成当前步骤。
     long countBySessionId(String sessionId);
 
-    /**
-     * 描述 `countBySessionIds` 操作。
-     *
-     * @param sessionIds 输入参数 `sessionIds`。
-     * @return 类型为 `List<Object[]>` 的返回值。
-     */
+    // 应用 `Query` 注解声明当前行为。
     @Query("""
             select m.session.id, count(m)
             from ChatMessage m
             where m.session.id in :sessionIds
             group by m.session.id
             """)
-    // 执行当前语句。
+    // 调用 `countBySessionIds` 完成当前步骤。
     List<Object[]> countBySessionIds(List<String> sessionIds);
-// 结束当前代码块。
 }

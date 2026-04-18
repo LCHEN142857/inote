@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.security;
 
 import com.inote.model.entity.User;
@@ -13,61 +13,51 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-// 应用当前注解。
+// 将当前类注册为通用组件。
 @Component
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义认证过滤器，负责根据令牌加载当前用户上下文。
 public class AuthContextFilter extends OncePerRequestFilter {
 
-    // 声明当前字段。
+    // 计算并保存认证header结果。
     public static final String AUTH_HEADER = "X-Auth-Token";
 
-    // 声明当前字段。
+    // 声明用户repository变量，供后续流程使用。
     private final UserRepository userRepository;
 
     /**
-     * 描述 `doFilterInternal` 操作。
-     *
-     * @param request 输入参数 `request`。
-     * @param response 输入参数 `response`。
-     * @param filterChain 输入参数 `filterChain`。
-     * @return 无返回值。
-     * @throws ServletException 已声明的异常类型 `ServletException`。
-     * @throws IOException 已声明的异常类型 `IOException`。
+     * 处理dofilterinternal相关逻辑。
+     * @param request 请求参数。
+     * @param response 响应参数。
+     * @param filterChain filterchain参数。
+     * @throws ServletException Servlet 过滤链执行失败时抛出。
+     * @throws IOException 文件读写失败时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法重写父类或接口定义。
     @Override
-    // 处理当前代码结构。
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            // 处理当前代码结构。
             throws ServletException, IOException {
-        // 执行当前语句。
+        // 计算并保存令牌结果。
         String token = request.getHeader(AUTH_HEADER);
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (token != null && !token.isBlank()) {
-            // 执行当前语句。
+            // 查询用户数据。
             User user = userRepository.findByAuthToken(token.trim()).orElse(null);
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (user != null) {
-                // 执行当前语句。
+                // 调用 `set` 完成当前步骤。
                 CurrentUserHolder.set(user);
-            // 结束当前代码块。
             }
-        // 结束当前代码块。
         }
 
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前语句。
+            // 调用 `doFilter` 完成当前步骤。
             filterChain.doFilter(request, response);
-        // 处理当前代码结构。
         } finally {
-            // 执行当前语句。
+            // 调用 `clear` 完成当前步骤。
             CurrentUserHolder.clear();
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

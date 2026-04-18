@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.integration;
 
 import com.inote.client.FallbackChatModel;
@@ -47,226 +47,210 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// 应用当前注解。
+// 加载完整 Spring Boot 上下文执行测试。
 @SpringBootTest
-// 应用当前注解。
+// 在测试环境中注入 MockMvc。
 @AutoConfigureMockMvc
-// 应用当前注解。
+// 声明测试运行时使用的配置环境。
 @ActiveProfiles("test")
-// 声明当前类型。
+// 定义 `BackendFlowIntegrationTest` 类型。
 class BackendFlowIntegrationTest {
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明mockmvc变量，供后续流程使用。
     private MockMvc mockMvc;
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明用户repository变量，供后续流程使用。
     private UserRepository userRepository;
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明问答会话repository变量，供后续流程使用。
     private ChatSessionRepository chatSessionRepository;
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明问答消息repository变量，供后续流程使用。
     private ChatMessageRepository chatMessageRepository;
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明文档repository变量，供后续流程使用。
     private DocumentRepository documentRepository;
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 围绕cominotecontroller补充当前业务语句。
     private com.inote.controller.DocumentController documentController;
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 围绕cominoteservice补充当前业务语句。
     private com.inote.service.DocumentService documentService;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明openai问答模型变量，供后续流程使用。
     private OpenAiChatModel openAiChatModel;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明问答模型变量，供后续流程使用。
     private ChatModel chatModel;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明兜底问答模型变量，供后续流程使用。
     private FallbackChatModel fallbackChatModel;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明向量模型变量，供后续流程使用。
     private EmbeddingModel embeddingModel;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明向量store变量，供后续流程使用。
     private VectorStore vectorStore;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明milvusserviceclient变量，供后续流程使用。
     private MilvusServiceClient milvusServiceClient;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明检索pipelineservice变量，供后续流程使用。
     private RetrievalPipelineService retrievalPipelineService;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明重排service变量，供后续流程使用。
     private RerankService rerankService;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明文档processingservice变量，供后续流程使用。
     private DocumentProcessingService documentProcessingService;
 
-    // 应用当前注解。
+    // 为当前测试注入临时目录。
     @TempDir
-    // 声明当前字段。
+    // 声明tempdir变量，供后续流程使用。
     Path tempDir;
 
     /**
-     * 描述 `setUp` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理setup相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法在每个测试前执行。
     @BeforeEach
-    // 处理当前代码结构。
     void setUp() throws Exception {
-        // 执行当前语句。
+        // 删除当前持久化数据。
         chatMessageRepository.deleteAll();
-        // 执行当前语句。
+        // 删除当前持久化数据。
         chatSessionRepository.deleteAll();
-        // 执行当前语句。
+        // 删除当前持久化数据。
         documentRepository.deleteAll();
-        // 执行当前语句。
+        // 删除当前持久化数据。
         userRepository.deleteAll();
-        // 执行当前语句。
+        // 调用 `createDirectories` 完成当前步骤。
         Files.createDirectories(tempDir.resolve("uploads"));
-        // 执行当前语句。
+        // 更新field字段。
         ReflectionTestUtils.setField(documentController, "uploadPath", tempDir.resolve("uploads").toString());
-        // 执行当前语句。
+        // 更新field字段。
         ReflectionTestUtils.setField(documentService, "uploadPath", tempDir.resolve("uploads").toString());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `chatQueryPersistsMessagesForAuthenticatedUser` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理问答查询persists消息forauthenticated用户相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void chatQueryPersistsMessagesForAuthenticatedUser() throws Exception {
-        // 执行当前语句。
+        // 保存用户对象。
         User user = userRepository.save(TestDataFactory.user("user-1", "tester", "token-1"));
-        // 执行当前语句。
+        // 保存会话对象。
         ChatSession session = chatSessionRepository.save(TestDataFactory.session("session-1", user, "New Session"));
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(retrievalPipelineService.retrieve("What is the rollout plan?")).thenReturn(new RetrievalResult("What is the rollout plan?", "What is the rollout plan?", List.of()));
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(post("/api/v1/chat/query").header("X-Auth-Token", "token-1").contentType(MediaType.APPLICATION_JSON).content("""
                 {
                   "sessionId": "session-1",
                   "question": "What is the rollout plan?"
                 }
                 """))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.sessionId").value("session-1"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.answer").value("The current documents do not provide enough information to answer this question."));
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(session.getId())).hasSize(2);
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(chatSessionRepository.findById(session.getId())).isPresent();
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(chatSessionRepository.findById(session.getId()).orElseThrow().getTitle()).isEqualTo("What is the rollout ...");
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `documentUploadCreatesOwnedDocumentRecord` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理文档上传createsowned文档record相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void documentUploadCreatesOwnedDocumentRecord() throws Exception {
-        // 执行当前语句。
+        // 保存当前对象到持久化层。
         userRepository.save(TestDataFactory.user("user-1", "tester", "token-1"));
-        // 执行当前语句。
+        // 创建文件对象。
         MockMultipartFile file = new MockMultipartFile("file", "notes.txt", "text/plain", "hello upload".getBytes());
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(documentProcessingService.saveFile(any(), anyString())).thenReturn(tempDir.resolve("uploads").resolve("saved-notes.txt"));
-        // 执行当前语句。
+        // 定义当前类型。
         doNothing().when(documentProcessingService).processDocumentAsync(any(Document.class), any(), anyString());
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(multipart("/api/v1/documents/upload").file(file).header("X-Auth-Token", "token-1"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.status").value("PARSING"));
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(documentRepository.findAll()).hasSize(1);
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(documentRepository.findAll().get(0).getOwner().getUsername()).isEqualTo("tester");
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `ownershipBoundariesReturnNotFoundForAnotherUser` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理ownershipboundariesreturnnotfoundforanother用户相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void ownershipBoundariesReturnNotFoundForAnotherUser() throws Exception {
-        // 执行当前语句。
+        // 保存所属用户对象。
         User owner = userRepository.save(TestDataFactory.user("user-1", "owner", "owner-token"));
-        // 执行当前语句。
+        // 保存当前对象到持久化层。
         userRepository.save(TestDataFactory.user("user-2", "other", "other-token"));
-        // 执行当前语句。
+        // 保存会话对象。
         ChatSession session = chatSessionRepository.save(TestDataFactory.session("session-1", owner, "Owner Session"));
-        // 执行当前语句。
+        // 保存文档对象。
         Document document = documentRepository.save(TestDataFactory.document("doc-1", owner, "COMPLETED"));
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/chat/sessions/" + session.getId()).header("X-Auth-Token", "other-token"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isNotFound())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.error").value("Session not found: " + session.getId()));
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents/" + document.getId()).header("X-Auth-Token", "other-token"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isNotFound())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.error").value("Document not found: " + document.getId()));
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

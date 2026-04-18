@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.service.retrieval;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,250 +28,206 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 将当前类注册为服务组件。
 @Service
-// 声明当前类型。
+// 定义 BM25 检索服务，负责维护 Lucene 关键词索引。
 public class BM25SearchService {
 
-    // 声明当前字段。
+    // 计算并保存field内容结果。
     private static final String FIELD_CONTENT = "content";
-    // 声明当前字段。
+    // 计算并保存fielddocid结果。
     private static final String FIELD_DOC_ID = "doc_id";
 
-    // 声明当前字段。
+    // 声明directory变量，供后续流程使用。
     private final Directory directory;
-    // 声明当前字段。
+    // 声明analyzer变量，供后续流程使用。
     private final Analyzer analyzer;
 
     /**
-     * 描述 `BM25SearchService` 操作。
-     *
-     * @return 构造完成的实例状态。
+     * 处理BM25searchservice相关逻辑。
      */
-    // 处理当前代码结构。
     public BM25SearchService() {
-        // 执行当前语句。
+        // 创建this.directory对象。
         this.directory = new ByteBuffersDirectory();
-        // 执行当前语句。
+        // 创建this.analyzer对象。
         this.analyzer = new SmartChineseAnalyzer();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `indexDocuments` 操作。
-     *
-     * @param documents 输入参数 `documents`。
-     * @return 无返回值。
+     * 将文档分块写入 Lucene 索引。
+     * @param documents 文档参数。
      */
-    // 处理当前代码结构。
     public synchronized void indexDocuments(List<Document> documents) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (documents == null || documents.isEmpty()) {
-            // 执行当前语句。
+            // 继续补全当前链式调用或多行表达式。
             return;
-        // 结束当前代码块。
         }
 
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前语句。
+            // 创建config对象。
             IndexWriterConfig config = new IndexWriterConfig(analyzer);
-            // 执行当前语句。
+            // 更新openmode字段。
             config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
-            // 执行当前流程控制分支。
+            // 进入异常保护块执行关键逻辑。
             try (IndexWriter writer = new IndexWriter(directory, config)) {
-                // 执行当前流程控制分支。
+                // 遍历当前集合或区间中的元素。
                 for (Document doc : documents) {
-                    // 执行当前语句。
+                    // 创建lucenedoc对象。
                     org.apache.lucene.document.Document luceneDoc = new org.apache.lucene.document.Document();
-                    // 执行当前语句。
+                    // 向当前集合中追加元素。
                     luceneDoc.add(new TextField(FIELD_CONTENT, doc.getText(), Field.Store.YES));
-                    // 执行当前语句。
+                    // 向当前集合中追加元素。
                     luceneDoc.add(new StringField(FIELD_DOC_ID, doc.getId(), Field.Store.YES));
 
-                    // 执行当前语句。
+                    // 计算并保存元数据结果。
                     Map<String, Object> metadata = doc.getMetadata();
-                    // 执行当前流程控制分支。
+                    // 根据条件判断当前分支是否执行。
                     if (metadata != null) {
-                        // 执行当前流程控制分支。
+                        // 遍历当前集合或区间中的元素。
                         for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-                            // 处理当前代码结构。
+                            // 围绕lucenedocadd补充当前业务语句。
                             luceneDoc.add(new StringField(
-                                    // 处理当前代码结构。
                                     "meta_" + entry.getKey(),
-                                    // 处理当前代码结构。
+                                    // 围绕valueofentry补充当前业务语句。
                                     String.valueOf(entry.getValue()),
-                                    // 执行当前语句。
+                                    // 围绕fieldstoreyes补充当前业务语句。
                                     Field.Store.YES));
-                        // 结束当前代码块。
                         }
-                    // 结束当前代码块。
                     }
 
-                    // 执行当前语句。
+                    // 调用 `addDocument` 完成当前步骤。
                     writer.addDocument(luceneDoc);
-                // 结束当前代码块。
                 }
-                // 执行当前语句。
+                // 调用 `commit` 完成当前步骤。
                 writer.commit();
-            // 结束当前代码块。
             }
 
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.info("Indexed {} documents for BM25 search", documents.size());
-        // 处理当前代码结构。
         } catch (IOException e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.error("Failed to index documents for BM25 search", e);
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `search` 操作。
-     *
-     * @param queryText 输入参数 `queryText`。
-     * @param topK 输入参数 `topK`。
-     * @return 类型为 `List<BM25Result>` 的返回值。
+     * 执行 BM25 关键词检索并返回命中结果。
+     * @param queryText 查询text参数。
+     * @param topK topk参数。
+     * @return 列表形式的处理结果。
      */
-    // 处理当前代码结构。
     public List<BM25Result> search(String queryText, int topK) {
-        // 执行当前语句。
+        // 创建结果对象。
         List<BM25Result> results = new ArrayList<>();
 
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (!DirectoryReader.indexExists(directory)) {
-                // 执行当前语句。
+                // 记录当前流程的运行日志。
                 log.debug("BM25 index is empty, returning no results");
-                // 返回当前结果。
+                // 返回结果。
                 return results;
-            // 结束当前代码块。
             }
 
-            // 执行当前流程控制分支。
+            // 进入异常保护块执行关键逻辑。
             try (IndexReader reader = DirectoryReader.open(directory)) {
-                // 执行当前语句。
+                // 创建searcher对象。
                 IndexSearcher searcher = new IndexSearcher(reader);
-                // 执行当前语句。
+                // 创建parser对象。
                 QueryParser parser = new QueryParser(FIELD_CONTENT, analyzer);
 
-                // 执行当前语句。
+                // 计算并保存escaped结果。
                 String escaped = QueryParser.escape(queryText);
-                // 执行当前语句。
+                // 计算并保存查询结果。
                 Query query = parser.parse(escaped);
 
-                // 执行当前语句。
+                // 计算并保存topdocs结果。
                 TopDocs topDocs = searcher.search(query, topK);
 
-                // 执行当前流程控制分支。
+                // 遍历当前集合或区间中的元素。
                 for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-                    // 执行当前语句。
+                    // 计算并保存lucenedoc结果。
                     org.apache.lucene.document.Document luceneDoc = searcher.doc(scoreDoc.doc);
-                    // 执行当前语句。
+                    // 计算并保存内容结果。
                     String content = luceneDoc.get(FIELD_CONTENT);
-                    // 执行当前语句。
+                    // 计算并保存docid结果。
                     String docId = luceneDoc.get(FIELD_DOC_ID);
 
-                    // 执行当前语句。
+                    // 创建元数据对象。
                     Map<String, Object> metadata = new HashMap<>();
-                    // 执行当前流程控制分支。
+                    // 遍历当前集合或区间中的元素。
                     for (var field : luceneDoc.getFields()) {
-                        // 执行当前流程控制分支。
+                        // 根据条件判断当前分支是否执行。
                         if (field.name().startsWith("meta_")) {
-                            // 执行当前语句。
+                            // 写入当前映射中的键值对。
                             metadata.put(field.name().substring(5), field.stringValue());
-                        // 结束当前代码块。
                         }
-                    // 结束当前代码块。
                     }
 
-                    // 执行当前语句。
+                    // 向当前集合中追加元素。
                     results.add(new BM25Result(docId, content, metadata, scoreDoc.score));
-                // 结束当前代码块。
                 }
-            // 结束当前代码块。
             }
-        // 处理当前代码结构。
         } catch (Exception e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.warn("BM25 search failed: {}", e.getMessage());
-        // 结束当前代码块。
         }
 
-        // 返回当前结果。
+        // 返回结果。
         return results;
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `search` 操作。
-     *
-     * @param queryText 输入参数 `queryText`。
-     * @param topK 输入参数 `topK`。
-     * @param ownerId 输入参数 `ownerId`。
-     * @return 类型为 `List<BM25Result>` 的返回值。
+     * 执行 BM25 关键词检索并返回命中结果。
+     * @param queryText 查询text参数。
+     * @param topK topk参数。
+     * @param ownerId 所属用户id参数。
+     * @return 列表形式的处理结果。
      */
-    // 处理当前代码结构。
     public List<BM25Result> search(String queryText, int topK, String ownerId) {
-        // 返回当前结果。
+        // 返回 `search` 的处理结果。
         return search(queryText, topK).stream()
-                // 处理当前代码结构。
+                // 设置filter字段的取值。
                 .filter(result -> ownerId.equals(String.valueOf(result.metadata().get("owner_id"))))
-                // 执行当前语句。
+                // 设置tolist字段的取值。
                 .toList();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `close` 操作。
-     *
-     * @return 无返回值。
+     * 处理close相关逻辑。
      */
-    // 应用当前注解。
+    // 声明当前方法在 Bean 销毁前执行。
     @PreDestroy
-    // 处理当前代码结构。
     public void close() {
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前语句。
+            // 调用 `close` 完成当前步骤。
             directory.close();
-        // 处理当前代码结构。
         } catch (IOException e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.warn("Failed to close BM25 directory", e);
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `BM25Result` 操作。
-     *
-     * @param documentId 输入参数 `documentId`。
-     * @param content 输入参数 `content`。
-     * @param metadata 输入参数 `metadata`。
-     * @param score 输入参数 `score`。
-     * @return 类型为 `record` 的返回值。
+     * 处理BM25结果相关逻辑。
+     * @param documentId 文档id参数。
+     * @param content 内容参数。
+     * @param metadata 元数据参数。
+     * @param score score参数。
+     * @return record结果。
      */
-    // 声明当前类型。
     public record BM25Result(
-            // 处理当前代码结构。
             String documentId,
-            // 处理当前代码结构。
             String content,
-            // 处理当前代码结构。
             Map<String, Object> metadata,
-            // 处理当前代码结构。
             double score
-    // 处理当前代码结构。
     ) {
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

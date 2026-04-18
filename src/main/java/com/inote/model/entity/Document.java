@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.model.entity;
 
 import jakarta.persistence.Column;
@@ -19,120 +19,110 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-// 应用当前注解。
+// 应用 `Getter` 注解声明当前行为。
 @Getter
-// 应用当前注解。
+// 应用 `Setter` 注解声明当前行为。
 @Setter
-// 应用当前注解。
+// 让 Lombok 为当前类型生成建造者。
 @Builder
-// 应用当前注解。
+// 让 Lombok 生成无参构造函数。
 @NoArgsConstructor
-// 应用当前注解。
+// 让 Lombok 生成全参构造函数。
 @AllArgsConstructor
-// 应用当前注解。
+// 声明当前类型为持久化实体。
 @Entity
-// 应用当前注解。
+// 声明当前实体映射的数据表。
 @Table(name = "documents")
-// 应用当前注解。
+// 应用 `EqualsAndHashCode` 注解声明当前行为。
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-// 声明当前类型。
+// 定义文档实体，表示用户上传并解析的知识库文件。
 public class Document {
 
-    // 应用当前注解。
+    // 标记当前字段作为实体主键。
     @Id
-    // 应用当前注解。
+    // 应用 `EqualsAndHashCode` 注解声明当前行为。
     @EqualsAndHashCode.Include
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(length = 36, nullable = false, updatable = false)
-    // 声明当前字段。
+    // 声明id变量，供后续流程使用。
     private String id;
 
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(nullable = false)
-    // 声明当前字段。
+    // 声明文件name变量，供后续流程使用。
     private String fileName;
 
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(nullable = false)
-    // 声明当前字段。
+    // 声明文件path变量，供后续流程使用。
     private String filePath;
 
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(nullable = false)
-    // 声明当前字段。
+    // 声明文件url变量，供后续流程使用。
     private String fileUrl;
 
-    // 应用当前注解。
+    // 定义当前实体到上游实体的多对一关系。
     @ManyToOne(optional = false)
-    // 应用当前注解。
+    // 声明实体关联关系的外键列。
     @JoinColumn(name = "owner_id", nullable = false)
-    // 声明当前字段。
+    // 声明所属用户变量，供后续流程使用。
     private User owner;
 
-    // 声明当前字段。
+    // 声明内容type变量，供后续流程使用。
     private String contentType;
 
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(nullable = false)
-    // 声明当前字段。
+    // 声明文件size变量，供后续流程使用。
     private long fileSize;
 
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(nullable = false, length = 32)
-    // 声明当前字段。
+    // 声明状态变量，供后续流程使用。
     private String status;
 
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(columnDefinition = "TEXT")
-    // 声明当前字段。
+    // 声明错误信息消息变量，供后续流程使用。
     private String errorMessage;
 
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(nullable = false)
-    // 声明当前字段。
+    // 声明createdat变量，供后续流程使用。
     private LocalDateTime createdAt;
 
-    // 应用当前注解。
+    // 定义当前属性与数据库列的映射关系。
     @Column(nullable = false)
-    // 声明当前字段。
+    // 声明updatedat变量，供后续流程使用。
     private LocalDateTime updatedAt;
 
     /**
-     * 描述 `prePersist` 操作。
-     *
-     * @return 无返回值。
+     * 处理prepersist相关逻辑。
      */
-    // 应用当前注解。
+    // 应用 `PrePersist` 注解声明当前行为。
     @PrePersist
-    // 处理当前代码结构。
     void prePersist() {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (id == null) {
-            // 执行当前语句。
+            // 生成id随机值。
             id = UUID.randomUUID().toString();
-        // 结束当前代码块。
         }
-        // 执行当前语句。
+        // 计算并保存now结果。
         LocalDateTime now = LocalDateTime.now();
-        // 执行当前语句。
+        // 计算并保存createdat结果。
         createdAt = now;
-        // 执行当前语句。
+        // 计算并保存updatedat结果。
         updatedAt = now;
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `preUpdate` 操作。
-     *
-     * @return 无返回值。
+     * 处理preupdate相关逻辑。
      */
-    // 应用当前注解。
+    // 应用 `PreUpdate` 注解声明当前行为。
     @PreUpdate
-    // 处理当前代码结构。
     void preUpdate() {
-        // 执行当前语句。
+        // 计算并保存updatedat结果。
         updatedAt = LocalDateTime.now();
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

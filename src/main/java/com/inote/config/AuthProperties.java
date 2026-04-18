@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.config;
 
 import lombok.Getter;
@@ -6,18 +6,17 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-// 应用当前注解。
+// 应用 `Getter` 注解声明当前行为。
 @Getter
-// 应用当前注解。
+// 应用 `Setter` 注解声明当前行为。
 @Setter
-// 应用当前注解。
+// 将当前类注册为通用组件。
 @Component
-// 应用当前注解。
+// 应用 `ConfigurationProperties` 注解声明当前行为。
 @ConfigurationProperties(prefix = "app.auth")
-// 声明当前类型。
+// 定义认证配置属性，负责承载验证码相关参数。
 public class AuthProperties {
 
-    // 声明当前字段。
+    // 计算并保存验证码length结果。
     private int captchaLength = 6;
-// 结束当前代码块。
 }

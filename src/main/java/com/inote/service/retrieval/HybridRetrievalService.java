@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.service.retrieval;
 
 import com.inote.config.RagProperties;
@@ -15,136 +15,122 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 将当前类注册为服务组件。
 @Service
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义混合检索服务，负责融合向量检索和 BM25 检索结果。
 public class HybridRetrievalService {
 
-    // 声明当前字段。
+    // 声明向量service变量，供后续流程使用。
     private final EmbeddingService embeddingService;
-    // 声明当前字段。
+    // 声明BM25searchservice变量，供后续流程使用。
     private final BM25SearchService bm25SearchService;
-    // 声明当前字段。
+    // 声明ragproperties变量，供后续流程使用。
     private final RagProperties ragProperties;
-    // 声明当前字段。
+    // 声明当前用户service变量，供后续流程使用。
     private final CurrentUserService currentUserService;
 
     /**
-     * 描述 `retrieve` 操作。
-     *
-     * @param query 输入参数 `query`。
-     * @return 类型为 `List<Document>` 的返回值。
+     * 执行向量检索，并在开启混合检索时融合 BM25 结果。
+     * @param query 查询参数。
+     * @return 列表形式的处理结果。
      */
-    // 处理当前代码结构。
     public List<Document> retrieve(String query) {
-        // 执行当前语句。
+        // 计算并保存向量topk结果。
         int vectorTopK = ragProperties.getVectorTopK();
-        // 执行当前语句。
+        // 获取当前登录用户。
         String ownerId = currentUserService.getCurrentUser().getId();
 
-        // 处理当前代码结构。
+        // 围绕文档向量结果补充当前业务语句。
         List<Document> vectorResults = embeddingService.searchSimilarDocuments(
-                // 执行当前语句。
+                // 调用 `getSimilarityThreshold` 完成当前步骤。
                 query, vectorTopK, ragProperties.getSimilarityThreshold(), ownerId);
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.debug("Vector search returned {} results", vectorResults.size());
 
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!ragProperties.isHybridSearchEnabled()) {
-            // 返回当前结果。
+            // 返回向量结果。
             return vectorResults;
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 计算并保存BM25topk结果。
         int bm25TopK = ragProperties.getBm25TopK();
-        // 执行当前语句。
+        // 围绕BM25searchservice补充当前业务语句。
         List<BM25SearchService.BM25Result> bm25Results;
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前语句。
+            // 计算并保存BM25结果结果。
             bm25Results = bm25SearchService.search(query, bm25TopK, ownerId);
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.debug("BM25 search returned {} results", bm25Results.size());
-        // 处理当前代码结构。
         } catch (Exception e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.warn("BM25 search failed, using vector-only results: {}", e.getMessage());
-            // 返回当前结果。
+            // 返回向量结果。
             return vectorResults;
-        // 结束当前代码块。
         }
 
-        // 返回当前结果。
+        // 返回 `fuseWithRRF` 的处理结果。
         return fuseWithRRF(vectorResults, bm25Results);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `fuseWithRRF` 操作。
-     *
-     * @param vectorResults 输入参数 `vectorResults`。
-     * @param bm25Results 输入参数 `bm25Results`。
-     * @return 类型为 `List<Document>` 的返回值。
+     * 使用倒数排序融合算法整合两路检索结果。
+     * @param vectorResults 向量结果参数。
+     * @param bm25Results BM25结果参数。
+     * @return 列表形式的处理结果。
      */
-    // 处理当前代码结构。
     private List<Document> fuseWithRRF(
-            // 处理当前代码结构。
             List<Document> vectorResults,
-            // 处理当前代码结构。
             List<BM25SearchService.BM25Result> bm25Results) {
 
-        // 执行当前语句。
+        // 计算并保存k结果。
         double k = ragProperties.getRrfK();
-        // 执行当前语句。
+        // 创建rrfscores对象。
         Map<String, Double> rrfScores = new HashMap<>();
-        // 执行当前语句。
+        // 创建docmap对象。
         Map<String, Document> docMap = new LinkedHashMap<>();
 
-        // 执行当前流程控制分支。
+        // 遍历当前集合或区间中的元素。
         for (int i = 0; i < vectorResults.size(); i++) {
-            // 执行当前语句。
+            // 计算并保存doc结果。
             Document doc = vectorResults.get(i);
-            // 执行当前语句。
+            // 计算并保存id结果。
             String id = doc.getId();
-            // 执行当前语句。
+            // 调用 `merge` 完成当前步骤。
             rrfScores.merge(id, 1.0 / (k + i + 1), Double::sum);
-            // 执行当前语句。
+            // 调用 `putIfAbsent` 完成当前步骤。
             docMap.putIfAbsent(id, doc);
-        // 结束当前代码块。
         }
 
-        // 执行当前流程控制分支。
+        // 遍历当前集合或区间中的元素。
         for (int i = 0; i < bm25Results.size(); i++) {
-            // 执行当前语句。
+            // 计算并保存BM25结果。
             BM25SearchService.BM25Result bm25 = bm25Results.get(i);
-            // 执行当前语句。
+            // 计算并保存id结果。
             String id = bm25.documentId();
-            // 执行当前语句。
+            // 调用 `merge` 完成当前步骤。
             rrfScores.merge(id, 1.0 / (k + i + 1), Double::sum);
-            // 执行当前语句。
+            // 调用 `putIfAbsent` 完成当前步骤。
             docMap.putIfAbsent(id, new Document(id, bm25.content(), bm25.metadata()));
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 创建fused对象。
         List<Document> fused = new ArrayList<>(docMap.values());
-        // 处理当前代码结构。
+        // 围绕fusedsorta补充当前业务语句。
         fused.sort((a, b) -> Double.compare(
-                // 处理当前代码结构。
+                // 围绕rrfscoresget补充当前业务语句。
                 rrfScores.getOrDefault(b.getId(), 0.0),
-                // 执行当前语句。
+                // 调用 `getOrDefault` 完成当前步骤。
                 rrfScores.getOrDefault(a.getId(), 0.0)));
 
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.debug("RRF fusion produced {} unique documents", fused.size());
-        // 返回当前结果。
+        // 返回fused。
         return fused;
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

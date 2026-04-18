@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.service.retrieval;
 
 import com.inote.config.RagProperties;
@@ -13,104 +13,92 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 将当前类注册为服务组件。
 @Service
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义检索管线服务，负责串联改写、拆分、检索和重排流程。
 public class RetrievalPipelineService {
 
-    // 声明当前字段。
+    // 声明ragproperties变量，供后续流程使用。
     private final RagProperties ragProperties;
-    // 声明当前字段。
+    // 声明查询改写service变量，供后续流程使用。
     private final QueryRewriteService queryRewriteService;
-    // 声明当前字段。
+    // 声明查询拆分service变量，供后续流程使用。
     private final QueryDecompositionService queryDecompositionService;
-    // 声明当前字段。
+    // 声明hybrid检索service变量，供后续流程使用。
     private final HybridRetrievalService hybridRetrievalService;
-    // 声明当前字段。
+    // 声明重排service变量，供后续流程使用。
     private final RerankService rerankService;
 
     /**
-     * 描述 `retrieve` 操作。
-     *
-     * @param originalQuery 输入参数 `originalQuery`。
-     * @return 类型为 `RetrievalResult` 的返回值。
+     * 执行完整检索流程，返回最终候选文档。
+     * @param originalQuery original查询参数。
+     * @return 检索结果结果。
      */
-    // 处理当前代码结构。
     public RetrievalResult retrieve(String originalQuery) {
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.info("Starting retrieval pipeline for query: {}", originalQuery);
 
-        // 执行当前语句。
+        // 计算并保存search查询结果。
         String searchQuery = originalQuery;
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (ragProperties.isQueryRewriteEnabled()) {
-            // 执行当前语句。
+            // 计算并保存search查询结果。
             searchQuery = queryRewriteService.rewrite(originalQuery);
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 声明queries变量，供后续流程使用。
         List<String> queries;
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (ragProperties.isMultiQueryEnabled()) {
-            // 执行当前语句。
+            // 计算并保存queries结果。
             queries = queryDecompositionService.decompose(searchQuery);
-        // 处理当前代码结构。
         } else {
-            // 执行当前语句。
+            // 构造queries固定列表。
             queries = List.of(searchQuery);
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 创建allcandidates对象。
         List<Document> allCandidates = new ArrayList<>();
-        // 执行当前语句。
+        // 创建seenids对象。
         Set<String> seenIds = new HashSet<>();
-        // 执行当前流程控制分支。
+        // 遍历当前集合或区间中的元素。
         for (String query : queries) {
-            // 执行当前语句。
+            // 执行检索流程并获取候选文档。
             List<Document> results = hybridRetrievalService.retrieve(query);
-            // 执行当前流程控制分支。
+            // 遍历当前集合或区间中的元素。
             for (Document doc : results) {
-                // 执行当前流程控制分支。
+                // 根据条件判断当前分支是否执行。
                 if (seenIds.add(doc.getId())) {
-                    // 执行当前语句。
+                    // 向当前集合中追加元素。
                     allCandidates.add(doc);
-                // 结束当前代码块。
                 }
-            // 结束当前代码块。
             }
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 声明finaldocs变量，供后续流程使用。
         List<Document> finalDocs;
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (ragProperties.isRerankEnabled() && allCandidates.size() > 1) {
-            // 处理当前代码结构。
+            // 围绕docs重排service补充当前业务语句。
             finalDocs = rerankService.rerank(
-                    // 执行当前语句。
+                    // 调用 `getRerankTopN` 完成当前步骤。
                     originalQuery, allCandidates, ragProperties.getRerankTopN());
-        // 处理当前代码结构。
         } else {
-            // 处理当前代码结构。
+            // 围绕docsallcandidates补充当前业务语句。
             finalDocs = allCandidates.stream()
-                    // 处理当前代码结构。
+                    // 设置limit字段的取值。
                     .limit(ragProperties.getFinalTopK())
-                    // 执行当前语句。
+                    // 设置collect字段的取值。
                     .collect(Collectors.toList());
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.info("Retrieval pipeline completed, {} documents returned", finalDocs.size());
-        // 返回当前结果。
+        // 返回 `RetrievalResult` 的处理结果。
         return new RetrievalResult(originalQuery, searchQuery, finalDocs);
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

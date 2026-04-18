@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.config;
 
 import com.inote.client.FallbackChatModel;
@@ -10,57 +10,50 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-// 应用当前注解。
+// 声明当前类提供 Spring 配置。
 @Configuration
-// 应用当前注解。
+// 应用 `EnableConfigurationProperties` 注解声明当前行为。
 @EnableConfigurationProperties(RagProperties.class)
-// 声明当前类型。
+// 定义 AI 相关配置，负责组装聊天模型和兜底模型。
 public class AiConfig {
 
-    // 应用当前注解。
+    // 从配置文件中注入当前字段的取值。
     @Value("${ai.fallback.model:kimi-2.5}")
-    // 声明当前字段。
+    // 声明兜底模型变量，供后续流程使用。
     private String fallbackModel;
 
-    // 应用当前注解。
+    // 从配置文件中注入当前字段的取值。
     @Value("${ai.fallback.api-key:}")
-    // 声明当前字段。
+    // 声明兜底接口key变量，供后续流程使用。
     private String fallbackApiKey;
 
-    // 应用当前注解。
+    // 从配置文件中注入当前字段的取值。
     @Value("${ai.fallback.base-url:https://api.moonshot.cn/v1}")
-    // 声明当前字段。
+    // 声明兜底baseurl变量，供后续流程使用。
     private String fallbackBaseUrl;
 
     /**
-     * 描述 `chatModel` 操作。
-     *
-     * @param openAiChatModel 输入参数 `openAiChatModel`。
-     * @return 类型为 `ChatModel` 的返回值。
+     * 处理问答模型相关逻辑。
+     * @param openAiChatModel openai问答模型参数。
+     * @return 问答模型结果。
      */
-    // 应用当前注解。
+    // 声明当前方法向容器提供 Bean。
     @Bean
-    // 应用当前注解。
+    // 应用 `Primary` 注解声明当前行为。
     @Primary
-    // 处理当前代码结构。
     public ChatModel chatModel(OpenAiChatModel openAiChatModel) {
-        // 返回当前结果。
+        // 返回openai问答模型。
         return openAiChatModel;
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `fallbackChatModel` 操作。
-     *
-     * @return 类型为 `FallbackChatModel` 的返回值。
+     * 处理兜底问答模型相关逻辑。
+     * @return 兜底问答模型结果。
      */
-    // 应用当前注解。
+    // 声明当前方法向容器提供 Bean。
     @Bean
-    // 处理当前代码结构。
     public FallbackChatModel fallbackChatModel() {
-        // 返回当前结果。
+        // 返回 `FallbackChatModel` 的处理结果。
         return new FallbackChatModel(fallbackModel, fallbackApiKey, fallbackBaseUrl);
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

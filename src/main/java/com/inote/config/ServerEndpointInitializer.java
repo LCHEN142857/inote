@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.config;
 
 import com.inote.logging.RuntimeEndpointHolder;
@@ -6,24 +6,19 @@ import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
-// 应用当前注解。
+// 将当前类注册为通用组件。
 @Component
-// 声明当前类型。
+// 定义 Servlet 容器初始化器，用于兼容外部容器部署。
 public class ServerEndpointInitializer implements ApplicationListener<WebServerInitializedEvent> {
 
     /**
-     * 描述 `onApplicationEvent` 操作。
-     *
-     * @param event 输入参数 `event`。
-     * @return 无返回值。
+     * 处理onapplicationevent相关逻辑。
+     * @param event event参数。
      */
-    // 应用当前注解。
+    // 声明当前方法重写父类或接口定义。
     @Override
-    // 处理当前代码结构。
     public void onApplicationEvent(WebServerInitializedEvent event) {
-        // 执行当前语句。
+        // 更新port字段。
         RuntimeEndpointHolder.setPort(event.getWebServer().getPort());
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

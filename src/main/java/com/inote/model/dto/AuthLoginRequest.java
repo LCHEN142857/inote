@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
@@ -7,35 +7,34 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// 应用当前注解。
+// 让 Lombok 为当前类型生成常用访问方法。
 @Data
-// 应用当前注解。
+// 让 Lombok 为当前类型生成建造者。
 @Builder
-// 应用当前注解。
+// 让 Lombok 生成无参构造函数。
 @NoArgsConstructor
-// 应用当前注解。
+// 让 Lombok 生成全参构造函数。
 @AllArgsConstructor
-// 声明当前类型。
+// 定义登录请求对象，承载用户名、密码和验证码信息。
 public class AuthLoginRequest {
 
-    // 应用当前注解。
+    // 应用 `NotBlank` 注解声明当前行为。
     @NotBlank(message = "username must not be blank")
-    // 声明当前字段。
+    // 声明username变量，供后续流程使用。
     private String username;
 
-    // 应用当前注解。
+    // 应用 `NotBlank` 注解声明当前行为。
     @NotBlank(message = "password must not be blank")
-    // 声明当前字段。
+    // 声明密码变量，供后续流程使用。
     private String password;
 
-    // 应用当前注解。
+    // 应用 `NotBlank` 注解声明当前行为。
     @NotBlank(message = "captchaId must not be blank")
-    // 声明当前字段。
+    // 声明验证码id变量，供后续流程使用。
     private String captchaId;
 
-    // 应用当前注解。
+    // 应用 `NotBlank` 注解声明当前行为。
     @NotBlank(message = "captchaCode must not be blank")
-    // 声明当前字段。
+    // 声明验证码code变量，供后续流程使用。
     private String captchaCode;
-// 结束当前代码块。
 }

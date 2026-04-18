@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.service.retrieval;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -20,243 +20,219 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 将当前类注册为服务组件。
 @Service
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义重排服务，负责调用外部接口优化候选文档顺序。
 public class RerankService {
 
-    // 声明当前字段。
+    // 声明ragproperties变量，供后续流程使用。
     private final RagProperties ragProperties;
-    // 声明当前字段。
+    // 声明接口key变量，供后续流程使用。
     private final String apiKey;
-    // 声明当前字段。
+    // 声明restclient变量，供后续流程使用。
     private final RestClient restClient;
 
-    // 处理当前代码结构。
+    // 定义重排url常量。
     private static final String RERANK_URL =
-            // 声明当前字段。
             "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-reranking/generation";
 
     /**
-     * 描述 `RerankService` 操作。
-     *
-     * @param ragProperties 输入参数 `ragProperties`。
-     * @param apiKey 输入参数 `apiKey`。
-     * @return 构造完成的实例状态。
+     * 处理重排service相关逻辑。
+     * @param ragProperties ragproperties参数。
+     * @param apiKey 接口key参数。
      */
-    // 处理当前代码结构。
     public RerankService(
-            // 处理当前代码结构。
             RagProperties ragProperties,
-            // 应用当前注解。
             @Value("${spring.ai.dashscope.api-key:${spring.ai.openai.api-key:}}") String apiKey) {
-        // 执行当前语句。
+        // 计算并保存this.ragproperties结果。
         this.ragProperties = ragProperties;
-        // 执行当前语句。
+        // 计算并保存this.apikey结果。
         this.apiKey = apiKey;
 
-        // 执行当前语句。
+        // 创建请求factory对象。
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        // 执行当前语句。
+        // 更新connecttimeout字段。
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
-        // 执行当前语句。
+        // 更新readtimeout字段。
         requestFactory.setReadTimeout(Duration.ofSeconds(30));
 
-        // 处理当前代码结构。
+        // 围绕restclientrest补充当前业务语句。
         this.restClient = RestClient.builder()
-                // 处理当前代码结构。
+                // 设置baseurl字段的取值。
                 .baseUrl(RERANK_URL)
-                // 处理当前代码结构。
+                // 设置请求factory字段的取值。
                 .requestFactory(requestFactory)
-                // 处理当前代码结构。
+                // 设置defaultheader字段的取值。
                 .defaultHeader("Authorization", "Bearer " + apiKey)
-                // 处理当前代码结构。
+                // 设置defaultheader字段的取值。
                 .defaultHeader("Content-Type", "application/json")
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `rerank` 操作。
-     *
-     * @param query 输入参数 `query`。
-     * @param candidates 输入参数 `candidates`。
-     * @param topN 输入参数 `topN`。
-     * @return 类型为 `List<Document>` 的返回值。
+     * 调用重排接口，对候选文档按相关性重新排序。
+     * @param query 查询参数。
+     * @param candidates candidates参数。
+     * @param topN topn参数。
+     * @return 列表形式的处理结果。
      */
-    // 处理当前代码结构。
     public List<Document> rerank(String query, List<Document> candidates, int topN) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (candidates.size() <= 1) {
-            // 返回当前结果。
+            // 返回candidates。
             return candidates;
-        // 结束当前代码块。
         }
 
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.debug("Reranking {} candidates with query: {}", candidates.size(), query);
 
-            // 处理当前代码结构。
+            // 围绕textscandidatesstream补充当前业务语句。
             List<String> texts = candidates.stream()
-                    // 处理当前代码结构。
+                    // 设置map字段的取值。
                     .map(Document::getText)
-                    // 执行当前语句。
+                    // 设置collect字段的取值。
                     .collect(Collectors.toList());
 
-            // 执行当前语句。
+            // 创建请求对象。
             RerankRequest request = new RerankRequest();
-            // 执行当前语句。
+            // 更新模型字段。
             request.setModel(ragProperties.getRerankModel());
-            // 执行当前语句。
+            // 创建输入对象。
             RerankRequest.Input input = new RerankRequest.Input();
-            // 执行当前语句。
+            // 更新查询字段。
             input.setQuery(query);
-            // 执行当前语句。
+            // 更新文档字段。
             input.setDocuments(texts);
-            // 执行当前语句。
+            // 更新输入字段。
             request.setInput(input);
-            // 执行当前语句。
+            // 创建parameters对象。
             RerankRequest.Parameters parameters = new RerankRequest.Parameters();
-            // 执行当前语句。
+            // 更新topn字段。
             parameters.setTopN(Math.min(topN, candidates.size()));
-            // 执行当前语句。
+            // 更新parameters字段。
             request.setParameters(parameters);
 
-            // 处理当前代码结构。
+            // 围绕重排响应响应补充当前业务语句。
             RerankResponse response = restClient.post()
-                    // 处理当前代码结构。
+                    // 设置内容type字段的取值。
                     .contentType(MediaType.APPLICATION_JSON)
-                    // 处理当前代码结构。
+                    // 设置body字段的取值。
                     .body(request)
-                    // 处理当前代码结构。
+                    // 设置retrieve字段的取值。
                     .retrieve()
-                    // 执行当前语句。
+                    // 定义当前类型。
                     .body(RerankResponse.class);
 
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (response == null || response.getOutput() == null
-                    // 处理当前代码结构。
                     || response.getOutput().getResults() == null) {
-                // 执行当前语句。
+                // 记录当前流程的运行日志。
                 log.warn("Rerank API returned empty response, using original order");
-                // 返回当前结果。
+                // 返回 `stream` 的处理结果。
                 return candidates.stream().limit(topN).collect(Collectors.toList());
-            // 结束当前代码块。
             }
 
-            // 执行当前语句。
+            // 计算并保存结果结果。
             List<RerankResponse.Result> results = response.getOutput().getResults();
-            // 执行当前语句。
+            // 调用 `sort` 完成当前步骤。
             results.sort(Comparator.comparingDouble(RerankResponse.Result::getRelevanceScore).reversed());
 
-            // 执行当前语句。
+            // 创建reranked对象。
             List<Document> reranked = new ArrayList<>();
-            // 执行当前流程控制分支。
+            // 遍历当前集合或区间中的元素。
             for (RerankResponse.Result result : results) {
-                // 执行当前语句。
+                // 计算并保存index结果。
                 int index = result.getIndex();
-                // 执行当前流程控制分支。
+                // 根据条件判断当前分支是否执行。
                 if (index >= 0 && index < candidates.size()) {
-                    // 执行当前语句。
+                    // 向当前集合中追加元素。
                     reranked.add(candidates.get(index));
-                // 结束当前代码块。
                 }
-            // 结束当前代码块。
             }
 
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.info("Reranking complete, returned {} documents", reranked.size());
-            // 返回当前结果。
+            // 返回reranked。
             return reranked;
 
-        // 处理当前代码结构。
         } catch (Exception e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.warn("Rerank failed, using original order: {}", e.getMessage());
-            // 返回当前结果。
+            // 返回 `stream` 的处理结果。
             return candidates.stream().limit(topN).collect(Collectors.toList());
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
-    // 应用当前注解。
+    // 让 Lombok 为当前类型生成常用访问方法。
     @Data
-    // 声明当前类型。
+    // 定义 `RerankRequest` 类型。
     static class RerankRequest {
-        // 执行当前语句。
+        // 声明模型变量，供后续流程使用。
         private String model;
-        // 执行当前语句。
+        // 声明输入变量，供后续流程使用。
         private Input input;
-        // 执行当前语句。
+        // 声明parameters变量，供后续流程使用。
         private Parameters parameters;
 
-        // 应用当前注解。
+        // 让 Lombok 为当前类型生成常用访问方法。
         @Data
-        // 声明当前类型。
+        // 定义 `Input` 类型。
         static class Input {
-            // 执行当前语句。
+            // 声明查询变量，供后续流程使用。
             private String query;
-            // 执行当前语句。
+            // 声明文档变量，供后续流程使用。
             private List<String> documents;
-        // 结束当前代码块。
         }
 
-        // 应用当前注解。
+        // 让 Lombok 为当前类型生成常用访问方法。
         @Data
-        // 声明当前类型。
+        // 定义 `Parameters` 类型。
         static class Parameters {
-            // 应用当前注解。
+            // 声明 JSON 字段与 Java 字段的映射名称。
             @JsonProperty("top_n")
-            // 执行当前语句。
+            // 声明topn变量，供后续流程使用。
             private int topN;
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
-    // 应用当前注解。
+    // 让 Lombok 为当前类型生成常用访问方法。
     @Data
-    // 应用当前注解。
+    // 声明反序列化时忽略未使用字段。
     @JsonIgnoreProperties(ignoreUnknown = true)
-    // 声明当前类型。
+    // 定义 `RerankResponse` 类型。
     static class RerankResponse {
-        // 执行当前语句。
+        // 声明输出变量，供后续流程使用。
         private Output output;
 
-        // 应用当前注解。
+        // 让 Lombok 为当前类型生成常用访问方法。
         @Data
-        // 应用当前注解。
+        // 声明反序列化时忽略未使用字段。
         @JsonIgnoreProperties(ignoreUnknown = true)
-        // 声明当前类型。
+        // 定义 `Output` 类型。
         static class Output {
-            // 执行当前语句。
+            // 声明结果变量，供后续流程使用。
             private List<Result> results;
-        // 结束当前代码块。
         }
 
-        // 应用当前注解。
+        // 让 Lombok 为当前类型生成常用访问方法。
         @Data
-        // 应用当前注解。
+        // 声明反序列化时忽略未使用字段。
         @JsonIgnoreProperties(ignoreUnknown = true)
-        // 声明当前类型。
+        // 定义 `Result` 类型。
         static class Result {
-            // 执行当前语句。
+            // 声明index变量，供后续流程使用。
             private int index;
-            // 应用当前注解。
+            // 声明 JSON 字段与 Java 字段的映射名称。
             @JsonProperty("relevance_score")
-            // 执行当前语句。
+            // 声明relevancescore变量，供后续流程使用。
             private double relevanceScore;
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.util;
 
 import lombok.extern.slf4j.Slf4j;
@@ -26,378 +26,324 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 将当前类注册为通用组件。
 @Component
-// 声明当前类型。
+// 定义文档解析工具，负责按文件类型提取文本并切分内容。
 public class DocumentParser {
 
     /**
-     * 描述 `parse` 操作。
-     *
-     * @param file 输入参数 `file`。
-     * @return 类型为 `String` 的返回值。
-     * @throws IOException 已声明的异常类型 `IOException`。
+     * 根据上传文件扩展名选择对应的文本解析策略。
+     * @param file 文件参数。
+     * @return 处理后的字符串结果。
+     * @throws IOException 文件读写失败时抛出。
      */
-    // 处理当前代码结构。
     public String parse(MultipartFile file) throws IOException {
-        // 执行当前语句。
+        // 计算并保存originalfilename结果。
         String originalFilename = file.getOriginalFilename();
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (originalFilename == null) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("文件名不能为空");
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 计算并保存extension结果。
         String extension = getFileExtension(originalFilename).toLowerCase();
 
-        // 执行当前流程控制分支。
+        // 根据不同条件分派后续处理逻辑。
         switch (extension) {
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case "pdf":
-                // 返回当前结果。
+                // 返回 `parsePdf` 的处理结果。
                 return parsePdf(file);
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case "docx":
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case "doc":
-                // 返回当前结果。
+                // 返回 `parseWord` 的处理结果。
                 return parseWord(file);
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case "xlsx":
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case "xls":
-                // 返回当前结果。
+                // 返回 `parseExcel` 的处理结果。
                 return parseExcel(file);
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case "txt":
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case "csv":
-                // 返回当前结果。
+                // 返回 `parseText` 的处理结果。
                 return parseText(file);
-            // 执行当前流程控制分支。
+            // 处理未命中任何分支时的默认情况。
             default:
-                // 抛出当前异常。
+                // 抛出 `IllegalArgumentException` 异常中断当前流程。
                 throw new IllegalArgumentException("不支持的文件格式: " + extension);
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `parsePdf` 操作。
-     *
-     * @param file 输入参数 `file`。
-     * @return 类型为 `String` 的返回值。
-     * @throws IOException 已声明的异常类型 `IOException`。
+     * 处理parsepdf相关逻辑。
+     * @param file 文件参数。
+     * @return 处理后的字符串结果。
+     * @throws IOException 文件读写失败时抛出。
      */
-    // 处理当前代码结构。
     private String parsePdf(MultipartFile file) throws IOException {
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.debug("Parsing PDF file: {}", file.getOriginalFilename());
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try (InputStream is = file.getInputStream()) {
-            // 执行当前语句。
+            // 计算并保存pdfbytes结果。
             byte[] pdfBytes = is.readAllBytes();
-            // 执行当前流程控制分支。
+            // 进入异常保护块执行关键逻辑。
             try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(pdfBytes))) {
-                // 执行当前语句。
+                // 创建stripper对象。
                 PDFTextStripper stripper = new PDFTextStripper();
-                // 返回当前结果。
+                // 返回 `getText` 的处理结果。
                 return stripper.getText(document);
-            // 结束当前代码块。
             }
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `parseWord` 操作。
-     *
-     * @param file 输入参数 `file`。
-     * @return 类型为 `String` 的返回值。
-     * @throws IOException 已声明的异常类型 `IOException`。
+     * 处理parseword相关逻辑。
+     * @param file 文件参数。
+     * @return 处理后的字符串结果。
+     * @throws IOException 文件读写失败时抛出。
      */
-    // 处理当前代码结构。
     private String parseWord(MultipartFile file) throws IOException {
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.debug("Parsing Word file: {}", file.getOriginalFilename());
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try (InputStream is = file.getInputStream();
-             // 处理当前代码结构。
+             // 围绕xwpfdocument文档xwpfdocument补充当前业务语句。
              XWPFDocument document = new XWPFDocument(is)) {
-            // 执行当前语句。
+            // 计算并保存paragraphs结果。
             List<XWPFParagraph> paragraphs = document.getParagraphs();
-            // 返回当前结果。
+            // 返回 `stream` 的处理结果。
             return paragraphs.stream()
-                    // 处理当前代码结构。
+                    // 设置map字段的取值。
                     .map(XWPFParagraph::getText)
-                    // 执行当前语句。
+                    // 设置collect字段的取值。
                     .collect(Collectors.joining("\n"));
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `parseExcel` 操作。
-     *
-     * @param file 输入参数 `file`。
-     * @return 类型为 `String` 的返回值。
-     * @throws IOException 已声明的异常类型 `IOException`。
+     * 处理parseexcel相关逻辑。
+     * @param file 文件参数。
+     * @return 处理后的字符串结果。
+     * @throws IOException 文件读写失败时抛出。
      */
-    // 处理当前代码结构。
     private String parseExcel(MultipartFile file) throws IOException {
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.debug("Parsing Excel file: {}", file.getOriginalFilename());
-        // 执行当前语句。
+        // 创建内容对象。
         StringBuilder content = new StringBuilder();
 
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try (InputStream is = file.getInputStream();
-             // 处理当前代码结构。
+             // 围绕workbookworkbookcreate补充当前业务语句。
              Workbook workbook = createWorkbook(is, file.getOriginalFilename())) {
 
-            // 执行当前流程控制分支。
+            // 遍历当前集合或区间中的元素。
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                // 执行当前语句。
+                // 计算并保存sheet结果。
                 Sheet sheet = workbook.getSheetAt(i);
-                // 执行当前语句。
+                // 调用 `append` 完成当前步骤。
                 content.append("Sheet: ").append(sheet.getSheetName()).append("\n");
 
-                // 执行当前流程控制分支。
+                // 遍历当前集合或区间中的元素。
                 for (Row row : sheet) {
-                    // 执行当前语句。
+                    // 创建row内容对象。
                     StringBuilder rowContent = new StringBuilder();
-                    // 执行当前流程控制分支。
+                    // 遍历当前集合或区间中的元素。
                     for (Cell cell : row) {
-                        // 执行当前语句。
+                        // 计算并保存cellvalue结果。
                         String cellValue = getCellValueAsString(cell);
-                        // 执行当前流程控制分支。
+                        // 根据条件判断当前分支是否执行。
                         if (!cellValue.isEmpty()) {
-                            // 执行当前语句。
+                            // 调用 `append` 完成当前步骤。
                             rowContent.append(cellValue).append("\t");
-                        // 结束当前代码块。
                         }
-                    // 结束当前代码块。
                     }
-                    // 执行当前流程控制分支。
+                    // 根据条件判断当前分支是否执行。
                     if (rowContent.length() > 0) {
-                        // 执行当前语句。
+                        // 调用 `append` 完成当前步骤。
                         content.append(rowContent.toString().trim()).append("\n");
-                    // 结束当前代码块。
                     }
-                // 结束当前代码块。
                 }
-                // 执行当前语句。
+                // 调用 `append` 完成当前步骤。
                 content.append("\n");
-            // 结束当前代码块。
             }
-        // 结束当前代码块。
         }
 
-        // 返回当前结果。
+        // 返回 `toString` 的处理结果。
         return content.toString().trim();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `createWorkbook` 操作。
-     *
-     * @param is 输入参数 `is`。
-     * @param filename 输入参数 `filename`。
-     * @return 类型为 `Workbook` 的返回值。
-     * @throws IOException 已声明的异常类型 `IOException`。
+     * 处理createworkbook相关逻辑。
+     * @param is is参数。
+     * @param filename filename参数。
+     * @return workbook结果。
+     * @throws IOException 文件读写失败时抛出。
      */
-    // 处理当前代码结构。
     private Workbook createWorkbook(InputStream is, String filename) throws IOException {
-        // 执行当前语句。
+        // 计算并保存extension结果。
         String extension = getFileExtension(filename).toLowerCase();
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if ("xlsx".equals(extension)) {
-            // 返回当前结果。
+            // 返回 `XSSFWorkbook` 的处理结果。
             return new XSSFWorkbook(is);
-        // 处理当前代码结构。
         } else {
-            // 返回当前结果。
+            // 返回 `HSSFWorkbook` 的处理结果。
             return new HSSFWorkbook(is);
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getCellValueAsString` 操作。
-     *
-     * @param cell 输入参数 `cell`。
-     * @return 类型为 `String` 的返回值。
+     * 处理getcellvalueasstring相关逻辑。
+     * @param cell cell参数。
+     * @return 处理后的字符串结果。
      */
-    // 处理当前代码结构。
     private String getCellValueAsString(Cell cell) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (cell == null) {
-            // 返回当前结果。
+            // 返回""。
             return "";
-        // 结束当前代码块。
         }
 
-        // 执行当前流程控制分支。
+        // 根据不同条件分派后续处理逻辑。
         switch (cell.getCellType()) {
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case STRING:
-                // 返回当前结果。
+                // 返回 `getStringCellValue` 的处理结果。
                 return cell.getStringCellValue();
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case NUMERIC:
-                // 执行当前流程控制分支。
+                // 根据条件判断当前分支是否执行。
                 if (DateUtil.isCellDateFormatted(cell)) {
-                    // 返回当前结果。
+                    // 返回 `getDateCellValue` 的处理结果。
                     return cell.getDateCellValue().toString();
-                // 结束当前代码块。
                 }
-                // 返回当前结果。
+                // 返回 `valueOf` 的处理结果。
                 return String.valueOf(cell.getNumericCellValue());
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case BOOLEAN:
-                // 返回当前结果。
+                // 返回 `valueOf` 的处理结果。
                 return String.valueOf(cell.getBooleanCellValue());
-            // 执行当前流程控制分支。
+            // 处理当前分支对应的匹配情况。
             case FORMULA:
-                // 返回当前结果。
+                // 返回 `getCellFormula` 的处理结果。
                 return cell.getCellFormula();
-            // 执行当前流程控制分支。
+            // 处理未命中任何分支时的默认情况。
             default:
-                // 返回当前结果。
+                // 返回""。
                 return "";
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `parseText` 操作。
-     *
-     * @param file 输入参数 `file`。
-     * @return 类型为 `String` 的返回值。
-     * @throws IOException 已声明的异常类型 `IOException`。
+     * 处理parsetext相关逻辑。
+     * @param file 文件参数。
+     * @return 处理后的字符串结果。
+     * @throws IOException 文件读写失败时抛出。
      */
-    // 处理当前代码结构。
     private String parseText(MultipartFile file) throws IOException {
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.debug("Parsing text file: {}", file.getOriginalFilename());
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try (InputStream is = file.getInputStream();
-             // 处理当前代码结构。
+             // 围绕bufferedreaderreader补充当前业务语句。
              BufferedReader reader = new BufferedReader(
-                     // 处理当前代码结构。
+                     // 围绕输入streamreader补充当前业务语句。
                      new InputStreamReader(is, StandardCharsets.UTF_8))) {
-            // 返回当前结果。
+            // 返回 `lines` 的处理结果。
             return reader.lines().collect(Collectors.joining("\n"));
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getFileExtension` 操作。
-     *
-     * @param filename 输入参数 `filename`。
-     * @return 类型为 `String` 的返回值。
+     * 处理get文件extension相关逻辑。
+     * @param filename filename参数。
+     * @return 处理后的字符串结果。
      */
-    // 处理当前代码结构。
     private String getFileExtension(String filename) {
-        // 执行当前语句。
+        // 计算并保存lastdotindex结果。
         int lastDotIndex = filename.lastIndexOf('.');
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (lastDotIndex == -1 || lastDotIndex == filename.length() - 1) {
-            // 返回当前结果。
+            // 返回""。
             return "";
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回 `substring` 的处理结果。
         return filename.substring(lastDotIndex + 1);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `chunkText` 操作。
-     *
-     * @param text 输入参数 `text`。
-     * @param chunkSize 输入参数 `chunkSize`。
-     * @param overlap 输入参数 `overlap`。
-     * @return 类型为 `List<String>` 的返回值。
+     * 按段落和重叠窗口切分长文本，生成可检索分块。
+     * @param text text参数。
+     * @param chunkSize 分块size参数。
+     * @param overlap overlap参数。
+     * @return 列表形式的处理结果。
      */
-    // 处理当前代码结构。
     public List<String> chunkText(String text, int chunkSize, int overlap) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (text == null || text.isEmpty()) {
-            // 返回当前结果。
+            // 返回固定列表结果。
             return List.of();
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 计算并保存paragraphs结果。
         String[] paragraphs = text.split("\n\\s*\n");
 
-        // 执行当前语句。
+        // 创建分块对象。
         java.util.List<String> chunks = new java.util.ArrayList<>();
-        // 执行当前语句。
+        // 创建当前分块对象。
         StringBuilder currentChunk = new StringBuilder();
 
-        // 执行当前流程控制分支。
+        // 遍历当前集合或区间中的元素。
         for (String paragraph : paragraphs) {
-            // 执行当前语句。
+            // 清理并规范化paragraph内容。
             paragraph = paragraph.trim();
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (paragraph.isEmpty()) {
-                // 执行当前语句。
+                // 跳过当前循环剩余逻辑，进入下一轮迭代。
                 continue;
-            // 结束当前代码块。
             }
 
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (currentChunk.length() + paragraph.length() > chunkSize
-                    // 处理当前代码结构。
                     && currentChunk.length() > 0) {
-                // 执行当前语句。
+                // 向当前集合中追加元素。
                 chunks.add(currentChunk.toString().trim());
 
-                // 执行当前语句。
+                // 计算并保存分块text结果。
                 String chunkText = currentChunk.toString();
-                // 执行当前流程控制分支。
+                // 根据条件判断当前分支是否执行。
                 if (chunkText.length() > overlap) {
-                    // 处理当前代码结构。
+                    // 围绕当前分块builder补充当前业务语句。
                     currentChunk = new StringBuilder(
-                            // 执行当前语句。
+                            // 调用 `substring` 完成当前步骤。
                             chunkText.substring(chunkText.length() - overlap));
-                // 处理当前代码结构。
                 } else {
-                    // 执行当前语句。
+                    // 创建当前分块对象。
                     currentChunk = new StringBuilder();
-                // 结束当前代码块。
                 }
-            // 结束当前代码块。
             }
 
-            // 执行当前语句。
+            // 调用 `append` 完成当前步骤。
             currentChunk.append(paragraph).append("\n\n");
-        // 结束当前代码块。
         }
 
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (currentChunk.length() > 0) {
-            // 执行当前语句。
+            // 向当前集合中追加元素。
             chunks.add(currentChunk.toString().trim());
-        // 结束当前代码块。
         }
 
-        // 返回当前结果。
+        // 返回分块。
         return chunks;
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

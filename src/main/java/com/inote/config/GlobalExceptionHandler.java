@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.config;
 
 import com.inote.model.dto.InoteResponse;
@@ -17,139 +17,119 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 声明当前类提供全局 REST 异常处理能力。
 @RestControllerAdvice
-// 声明当前类型。
+// 定义全局异常处理器，负责统一封装接口错误响应。
 public class GlobalExceptionHandler {
 
     /**
-     * 描述 `handleValidationExceptions` 操作。
-     *
-     * @param ex 输入参数 `ex`。
-     * @return 类型为 `ResponseEntity<Map<String, String>>` 的返回值。
+     * 处理handlevalidationexceptions相关逻辑。
+     * @param ex ex参数。
+     * @return string>>结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理指定异常类型。
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    // 处理当前代码结构。
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        // 执行当前语句。
+        // 创建errors对象。
         Map<String, String> errors = new HashMap<>();
-        // 处理当前代码结构。
+        // 围绕exgetbinding补充当前业务语句。
         ex.getBindingResult().getAllErrors().forEach(error -> {
-            // 执行当前语句。
+            // 计算并保存fieldname结果。
             String fieldName = ((FieldError) error).getField();
-            // 执行当前语句。
+            // 计算并保存错误信息消息结果。
             String errorMessage = error.getDefaultMessage();
-            // 执行当前语句。
+            // 写入当前映射中的键值对。
             errors.put(fieldName, errorMessage);
-        // 执行当前语句。
         });
-        // 返回当前结果。
+        // 返回参数错误响应。
         return ResponseEntity.badRequest().body(errors);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `handleMaxSizeException` 操作。
-     *
-     * @param ex 输入参数 `ex`。
-     * @return 类型为 `ResponseEntity<Map<String, String>>` 的返回值。
+     * 处理handlemaxsizeexception相关逻辑。
+     * @param ex ex参数。
+     * @return string>>结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理指定异常类型。
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    // 处理当前代码结构。
     public ResponseEntity<Map<String, String>> handleMaxSizeException(MaxUploadSizeExceededException ex) {
-        // 执行当前语句。
+        // 创建错误信息对象。
         Map<String, String> error = new HashMap<>();
-        // 执行当前语句。
+        // 写入当前映射中的键值对。
         error.put("error", "Uploaded file exceeds the configured size limit.");
-        // 返回当前结果。
+        // 按指定状态码返回响应。
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(error);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `handleIllegalArgument` 操作。
-     *
-     * @param ex 输入参数 `ex`。
-     * @return 类型为 `ResponseEntity<Map<String, String>>` 的返回值。
+     * 处理handleillegalargument相关逻辑。
+     * @param ex ex参数。
+     * @return string>>结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理指定异常类型。
     @ExceptionHandler(IllegalArgumentException.class)
-    // 处理当前代码结构。
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-        // 执行当前语句。
+        // 创建错误信息对象。
         Map<String, String> error = new HashMap<>();
-        // 执行当前语句。
+        // 写入当前映射中的键值对。
         error.put("error", ex.getMessage());
-        // 返回当前结果。
+        // 返回参数错误响应。
         return ResponseEntity.badRequest().body(error);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `handleEntityNotFound` 操作。
-     *
-     * @param ex 输入参数 `ex`。
-     * @return 类型为 `ResponseEntity<Map<String, String>>` 的返回值。
+     * 处理handleentitynotfound相关逻辑。
+     * @param ex ex参数。
+     * @return string>>结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理指定异常类型。
     @ExceptionHandler(EntityNotFoundException.class)
-    // 处理当前代码结构。
     public ResponseEntity<Map<String, String>> handleEntityNotFound(EntityNotFoundException ex) {
-        // 执行当前语句。
+        // 创建错误信息对象。
         Map<String, String> error = new HashMap<>();
-        // 执行当前语句。
+        // 写入当前映射中的键值对。
         error.put("error", ex.getMessage());
-        // 返回当前结果。
+        // 按指定状态码返回响应。
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `handleUnauthorized` 操作。
-     *
-     * @param ex 输入参数 `ex`。
-     * @return 类型为 `ResponseEntity<Map<String, String>>` 的返回值。
+     * 处理handleunauthorized相关逻辑。
+     * @param ex ex参数。
+     * @return string>>结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理指定异常类型。
     @ExceptionHandler(UnauthorizedException.class)
-    // 处理当前代码结构。
     public ResponseEntity<Map<String, String>> handleUnauthorized(UnauthorizedException ex) {
-        // 执行当前语句。
+        // 创建错误信息对象。
         Map<String, String> error = new HashMap<>();
-        // 执行当前语句。
+        // 写入当前映射中的键值对。
         error.put("error", ex.getMessage());
-        // 返回当前结果。
+        // 按指定状态码返回响应。
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `handleGenericException` 操作。
-     *
-     * @param ex 输入参数 `ex`。
-     * @return 类型为 `ResponseEntity<InoteResponse>` 的返回值。
+     * 处理handlegenericexception相关逻辑。
+     * @param ex ex参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理指定异常类型。
     @ExceptionHandler(Exception.class)
-    // 处理当前代码结构。
     public ResponseEntity<InoteResponse> handleGenericException(Exception ex) {
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.error("Unexpected error occurred", ex);
-        // 处理当前代码结构。
+        // 围绕inote响应响应补充当前业务语句。
         InoteResponse response = InoteResponse.builder()
-                // 处理当前代码结构。
+                // 设置回答字段的取值。
                 .answer("Unexpected server error. Please try again later.")
-                // 处理当前代码结构。
+                // 设置来源字段的取值。
                 .sources(List.of())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-        // 返回当前结果。
+        // 按指定状态码返回响应。
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

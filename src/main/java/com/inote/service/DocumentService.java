@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.service;
 
 import com.inote.model.dto.DocumentStatusResponse;
@@ -19,279 +19,231 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 将当前类注册为服务组件。
 @Service
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义文档服务，负责校验上传文件并维护文档记录。
 public class DocumentService {
 
-    /**
-     * 描述 `Set.of` 操作。
-     *
-     * @param "pdf" 输入参数 `"pdf"`。
-     * @param "docx" 输入参数 `"docx"`。
-     * @param "doc" 输入参数 `"doc"`。
-     * @param "xlsx" 输入参数 `"xlsx"`。
-     * @param "xls" 输入参数 `"xls"`。
-     * @param "txt" 输入参数 `"txt"`。
-     * @param "csv" 输入参数 `"csv"`。
-     * @return 类型为 `Set<String> ALLOWED_EXTENSIONS =` 的返回值。
-     */
-    // 处理当前代码结构。
+    // 定义allowedextensions常量。
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            // 处理当前代码结构。
             "pdf", "docx", "doc", "xlsx", "xls", "txt", "csv"
-    // 声明当前字段。
     );
 
-    // 声明当前字段。
+    // 声明文档repository变量，供后续流程使用。
     private final DocumentRepository documentRepository;
-    // 声明当前字段。
+    // 声明processingservice变量，供后续流程使用。
     private final DocumentProcessingService processingService;
-    // 声明当前字段。
+    // 声明当前用户service变量，供后续流程使用。
     private final CurrentUserService currentUserService;
 
-    // 应用当前注解。
+    // 从配置文件中注入当前字段的取值。
     @Value("${file.upload.path:./uploads}")
-    // 声明当前字段。
+    // 声明上传path变量，供后续流程使用。
     private String uploadPath;
 
     /**
-     * 描述 `uploadDocument` 操作。
-     *
-     * @param file 输入参数 `file`。
-     * @return 类型为 `DocumentUploadResponse` 的返回值。
+     * 校验上传文件、创建文档记录并异步启动解析流程。
+     * @param file 文件参数。
+     * @return 文档上传响应结果。
      */
-    // 处理当前代码结构。
     public DocumentUploadResponse uploadDocument(MultipartFile file) {
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前语句。
+            // 调用 `validateFile` 完成当前步骤。
             validateFile(file);
-            // 执行当前语句。
+            // 获取当前登录用户。
             User user = currentUserService.getCurrentUser();
 
-            // 执行当前语句。
+            // 计算并保存savedpath结果。
             Path savedPath = processingService.saveFile(file, uploadPath);
 
-            // 处理当前代码结构。
+            // 围绕文档文档文档补充当前业务语句。
             Document document = Document.builder()
-                    // 处理当前代码结构。
+                    // 设置文件name字段的取值。
                     .fileName(file.getOriginalFilename())
-                    // 处理当前代码结构。
+                    // 设置文件path字段的取值。
                     .filePath(savedPath.toString())
-                    // 处理当前代码结构。
+                    // 设置文件url字段的取值。
                     .fileUrl("")
-                    // 处理当前代码结构。
+                    // 设置所属用户字段的取值。
                     .owner(user)
-                    // 处理当前代码结构。
+                    // 设置内容type字段的取值。
                     .contentType(file.getContentType())
-                    // 处理当前代码结构。
+                    // 设置文件size字段的取值。
                     .fileSize(file.getSize())
-                    // 处理当前代码结构。
+                    // 设置状态字段的取值。
                     .status("PARSING")
-                    // 执行当前语句。
+                    // 完成当前建造者对象的组装。
                     .build();
 
-            // 执行当前语句。
+            // 保存文档对象。
             document = documentRepository.save(document);
-            // 执行当前语句。
+            // 计算并保存文件url结果。
             String fileUrl = "/api/v1/documents/files/" + document.getId();
-            // 执行当前语句。
+            // 更新文件url字段。
             document.setFileUrl(fileUrl);
-            // 执行当前语句。
+            // 保存当前对象到持久化层。
             documentRepository.save(document);
-            // 执行当前语句。
+            // 调用 `processDocumentAsync` 完成当前步骤。
             processingService.processDocumentAsync(document, file, fileUrl);
 
-            // 返回当前结果。
+            // 返回组装完成的结果对象。
             return DocumentUploadResponse.builder()
-                    // 处理当前代码结构。
+                    // 设置文档id字段的取值。
                     .documentId(document.getId())
-                    // 处理当前代码结构。
+                    // 设置文件name字段的取值。
                     .fileName(document.getFileName())
-                    // 处理当前代码结构。
+                    // 设置状态字段的取值。
                     .status(document.getStatus())
-                    // 处理当前代码结构。
+                    // 设置消息字段的取值。
                     .message("Upload accepted. Document parsing has started.")
-                    // 执行当前语句。
+                    // 完成当前建造者对象的组装。
                     .build();
-        // 处理当前代码结构。
         } catch (IllegalArgumentException e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.warn("File validation failed: {}", e.getMessage());
-            // 返回当前结果。
+            // 返回组装完成的结果对象。
             return DocumentUploadResponse.builder()
-                    // 处理当前代码结构。
+                    // 设置状态字段的取值。
                     .status("FAILED")
-                    // 处理当前代码结构。
+                    // 设置消息字段的取值。
                     .message(e.getMessage())
-                    // 执行当前语句。
+                    // 完成当前建造者对象的组装。
                     .build();
-        // 处理当前代码结构。
         } catch (IOException e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.error("Failed to save file", e);
-            // 返回当前结果。
+            // 返回组装完成的结果对象。
             return DocumentUploadResponse.builder()
-                    // 处理当前代码结构。
+                    // 设置状态字段的取值。
                     .status("FAILED")
-                    // 处理当前代码结构。
+                    // 设置消息字段的取值。
                     .message("File save failed: " + e.getMessage())
-                    // 执行当前语句。
+                    // 完成当前建造者对象的组装。
                     .build();
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getDocumentStatus` 操作。
-     *
-     * @param documentId 输入参数 `documentId`。
-     * @return 类型为 `DocumentStatusResponse` 的返回值。
+     * 查询指定文档的最新处理状态。
+     * @param documentId 文档id参数。
+     * @return 文档状态响应结果。
      */
-    // 处理当前代码结构。
     public DocumentStatusResponse getDocumentStatus(String documentId) {
-        // 返回当前结果。
+        // 返回 `toStatusResponse` 的处理结果。
         return toStatusResponse(findDocument(documentId));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `listDocuments` 操作。
-     *
-     * @return 类型为 `List<DocumentStatusResponse>` 的返回值。
+     * 查询当前用户名下的全部文档状态。
+     * @return 列表形式的处理结果。
      */
-    // 处理当前代码结构。
     public List<DocumentStatusResponse> listDocuments() {
-        // 执行当前语句。
+        // 获取当前登录用户。
         User user = currentUserService.getCurrentUser();
-        // 返回当前结果。
+        // 返回 `findAllByOwnerIdOrderByUpdatedAtDesc` 的处理结果。
         return documentRepository.findAllByOwnerIdOrderByUpdatedAtDesc(user.getId()).stream()
-                // 处理当前代码结构。
+                // 设置map字段的取值。
                 .map(this::toStatusResponse)
-                // 执行当前语句。
+                // 设置tolist字段的取值。
                 .toList();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getOwnedDocument` 操作。
-     *
-     * @param documentId 输入参数 `documentId`。
-     * @return 类型为 `Document` 的返回值。
+     * 读取当前用户拥有的文档实体。
+     * @param documentId 文档id参数。
+     * @return 匹配到的文档实体。
      */
-    // 处理当前代码结构。
     public Document getOwnedDocument(String documentId) {
-        // 返回当前结果。
+        // 返回 `findDocument` 的处理结果。
         return findDocument(documentId);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `findDocument` 操作。
-     *
-     * @param documentId 输入参数 `documentId`。
-     * @return 类型为 `Document` 的返回值。
+     * 处理find文档相关逻辑。
+     * @param documentId 文档id参数。
+     * @return 匹配到的文档实体。
      */
-    // 处理当前代码结构。
     private Document findDocument(String documentId) {
-        // 执行当前语句。
+        // 获取当前登录用户。
         User user = currentUserService.getCurrentUser();
-        // 返回当前结果。
+        // 返回 `findByIdAndOwnerId` 的处理结果。
         return documentRepository.findByIdAndOwnerId(documentId, user.getId())
-                // 执行当前语句。
+                // 设置orelsethrow字段的取值。
                 .orElseThrow(() -> new EntityNotFoundException("Document not found: " + documentId));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `toStatusResponse` 操作。
-     *
-     * @param document 输入参数 `document`。
-     * @return 类型为 `DocumentStatusResponse` 的返回值。
+     * 处理to状态响应相关逻辑。
+     * @param document 文档参数。
+     * @return 文档状态响应结果。
      */
-    // 处理当前代码结构。
     private DocumentStatusResponse toStatusResponse(Document document) {
-        // 返回当前结果。
+        // 返回组装完成的结果对象。
         return DocumentStatusResponse.builder()
-                // 处理当前代码结构。
+                // 设置文档id字段的取值。
                 .documentId(document.getId())
-                // 处理当前代码结构。
+                // 设置文件name字段的取值。
                 .fileName(document.getFileName())
-                // 处理当前代码结构。
+                // 设置文件size字段的取值。
                 .fileSize(document.getFileSize())
-                // 处理当前代码结构。
+                // 设置状态字段的取值。
                 .status(document.getStatus())
-                // 处理当前代码结构。
+                // 设置错误信息消息字段的取值。
                 .errorMessage(document.getErrorMessage())
-                // 处理当前代码结构。
+                // 设置updatedat字段的取值。
                 .updatedAt(document.getUpdatedAt())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `validateFile` 操作。
-     *
-     * @param file 输入参数 `file`。
-     * @return 无返回值。
+     * 处理validate文件相关逻辑。
+     * @param file 文件参数。
      */
-    // 处理当前代码结构。
     private void validateFile(MultipartFile file) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (file == null || file.isEmpty()) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("File must not be empty.");
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 计算并保存originalfilename结果。
         String originalFilename = file.getOriginalFilename();
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (originalFilename == null) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("File name must not be empty.");
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 计算并保存extension结果。
         String extension = getFileExtension(originalFilename).toLowerCase();
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            // 抛出当前异常。
+            // 抛出 `IllegalArgumentException` 异常中断当前流程。
             throw new IllegalArgumentException("Unsupported file type: " + extension +
-                    // 执行当前语句。
                     ". Supported types: " + String.join(", ", ALLOWED_EXTENSIONS));
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getFileExtension` 操作。
-     *
-     * @param filename 输入参数 `filename`。
-     * @return 类型为 `String` 的返回值。
+     * 处理get文件extension相关逻辑。
+     * @param filename filename参数。
+     * @return 处理后的字符串结果。
      */
-    // 处理当前代码结构。
     private String getFileExtension(String filename) {
-        // 执行当前语句。
+        // 计算并保存lastdotindex结果。
         int lastDotIndex = filename.lastIndexOf('.');
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (lastDotIndex == -1 || lastDotIndex == filename.length() - 1) {
-            // 返回当前结果。
+            // 返回""。
             return "";
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回 `substring` 的处理结果。
         return filename.substring(lastDotIndex + 1);
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

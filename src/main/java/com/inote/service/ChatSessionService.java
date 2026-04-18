@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.service;
 
 import com.inote.model.dto.ChatMessageResponse;
@@ -23,284 +23,245 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-// 应用当前注解。
+// 将当前类注册为服务组件。
 @Service
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义会话服务，负责聊天会话的增删改查。
 public class ChatSessionService {
 
-    // 声明当前字段。
+    // 声明问答会话repository变量，供后续流程使用。
     private final ChatSessionRepository chatSessionRepository;
-    // 声明当前字段。
+    // 声明问答消息repository变量，供后续流程使用。
     private final ChatMessageRepository chatMessageRepository;
-    // 声明当前字段。
+    // 声明当前用户service变量，供后续流程使用。
     private final CurrentUserService currentUserService;
 
     /**
-     * 描述 `createSession` 操作。
-     *
-     * @param request 输入参数 `request`。
-     * @return 类型为 `ChatSessionResponse` 的返回值。
+     * 为当前用户创建新的聊天会话。
+     * @param request 请求参数。
+     * @return 问答会话响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法在事务边界内执行。
     @Transactional
-    // 处理当前代码结构。
     public ChatSessionResponse createSession(ChatSessionCreateRequest request) {
-        // 执行当前语句。
+        // 获取当前登录用户。
         User user = currentUserService.getCurrentUser();
-        // 处理当前代码结构。
+        // 围绕问答会话会话补充当前业务语句。
         ChatSession session = ChatSession.builder()
-                // 处理当前代码结构。
+                // 设置标题字段的取值。
                 .title(resolveTitle(request == null ? null : request.getTitle()))
-                // 处理当前代码结构。
+                // 设置所属用户字段的取值。
                 .owner(user)
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-        // 执行当前语句。
+        // 保存saved对象。
         ChatSession saved = chatSessionRepository.save(session);
-        // 返回当前结果。
+        // 返回 `toResponse` 的处理结果。
         return toResponse(saved, List.of());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `listSessions` 操作。
-     *
-     * @return 类型为 `List<ChatSessionSummaryResponse>` 的返回值。
+     * 查询当前用户的会话列表和消息数量。
+     * @return 列表形式的处理结果。
      */
-    // 应用当前注解。
+    // 声明当前方法在事务边界内执行。
     @Transactional(readOnly = true)
-    // 处理当前代码结构。
     public List<ChatSessionSummaryResponse> listSessions() {
-        // 执行当前语句。
+        // 获取当前登录用户。
         User user = currentUserService.getCurrentUser();
-        // 执行当前语句。
+        // 查询会话数据。
         List<ChatSession> sessions = chatSessionRepository.findAllByOwnerIdOrderByUpdatedAtDesc(user.getId());
-        // 执行当前语句。
+        // 计算并保存消息counts结果。
         Map<String, Long> messageCounts = loadMessageCounts(sessions);
 
-        // 返回当前结果。
+        // 返回 `stream` 的处理结果。
         return sessions.stream()
-                // 处理当前代码结构。
+                // 设置map字段的取值。
                 .map(session -> ChatSessionSummaryResponse.builder()
-                        // 处理当前代码结构。
+                        // 设置id字段的取值。
                         .id(session.getId())
-                        // 处理当前代码结构。
+                        // 设置标题字段的取值。
                         .title(session.getTitle())
-                        // 处理当前代码结构。
+                        // 设置消息count字段的取值。
                         .messageCount(messageCounts.getOrDefault(session.getId(), 0L))
-                        // 处理当前代码结构。
+                        // 设置createdat字段的取值。
                         .createdAt(session.getCreatedAt())
-                        // 处理当前代码结构。
+                        // 设置updatedat字段的取值。
                         .updatedAt(session.getUpdatedAt())
-                        // 处理当前代码结构。
+                        // 完成当前建造者对象的组装。
                         .build())
-                // 执行当前语句。
+                // 设置tolist字段的取值。
                 .toList();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getSession` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @return 类型为 `ChatSessionResponse` 的返回值。
+     * 查询指定会话的详情和消息历史。
+     * @param sessionId 会话id参数。
+     * @return 问答会话响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法在事务边界内执行。
     @Transactional(readOnly = true)
-    // 处理当前代码结构。
     public ChatSessionResponse getSession(String sessionId) {
-        // 执行当前语句。
+        // 计算并保存会话结果。
         ChatSession session = getSessionEntity(sessionId);
-        // 返回当前结果。
+        // 返回 `toResponse` 的处理结果。
         return toResponse(session, chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `updateSession` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @param request 输入参数 `request`。
-     * @return 类型为 `ChatSessionResponse` 的返回值。
+     * 更新指定会话的标题。
+     * @param sessionId 会话id参数。
+     * @param request 请求参数。
+     * @return 问答会话响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法在事务边界内执行。
     @Transactional
-    // 处理当前代码结构。
     public ChatSessionResponse updateSession(String sessionId, ChatSessionUpdateRequest request) {
-        // 执行当前语句。
+        // 计算并保存会话结果。
         ChatSession session = getSessionEntity(sessionId);
-        // 执行当前语句。
+        // 更新标题字段。
         session.setTitle(request.getTitle().trim());
-        // 执行当前语句。
+        // 保存saved对象。
         ChatSession saved = chatSessionRepository.save(session);
-        // 返回当前结果。
+        // 返回 `toResponse` 的处理结果。
         return toResponse(saved, chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `deleteSession` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @return 无返回值。
+     * 删除当前用户拥有的指定会话。
+     * @param sessionId 会话id参数。
      */
-    // 应用当前注解。
+    // 声明当前方法在事务边界内执行。
     @Transactional
-    // 处理当前代码结构。
     public void deleteSession(String sessionId) {
-        // 执行当前语句。
+        // 获取当前登录用户。
         User user = currentUserService.getCurrentUser();
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!chatSessionRepository.existsByIdAndOwnerId(sessionId, user.getId())) {
-            // 抛出当前异常。
+            // 抛出 `EntityNotFoundException` 异常中断当前流程。
             throw new EntityNotFoundException("Session not found: " + sessionId);
-        // 结束当前代码块。
         }
-        // 执行当前语句。
+        // 删除当前持久化数据。
         chatSessionRepository.deleteById(sessionId);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getSessionEntity` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @return 类型为 `ChatSession` 的返回值。
+     * 读取并校验当前用户拥有的会话实体。
+     * @param sessionId 会话id参数。
+     * @return 匹配到的会话实体。
      */
-    // 应用当前注解。
+    // 声明当前方法在事务边界内执行。
     @Transactional(readOnly = true)
-    // 处理当前代码结构。
     public ChatSession getSessionEntity(String sessionId) {
-        // 执行当前语句。
+        // 获取当前登录用户。
         User user = currentUserService.getCurrentUser();
-        // 返回当前结果。
+        // 返回 `findByIdAndOwnerId` 的处理结果。
         return chatSessionRepository.findByIdAndOwnerId(sessionId, user.getId())
-                // 执行当前语句。
+                // 设置orelsethrow字段的取值。
                 .orElseThrow(() -> new EntityNotFoundException("Session not found: " + sessionId));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `touchSession` 操作。
-     *
-     * @param session 输入参数 `session`。
-     * @return 无返回值。
+     * 刷新会话更新时间，表示会话刚被访问或写入。
+     * @param session 会话参数。
      */
-    // 应用当前注解。
+    // 声明当前方法在事务边界内执行。
     @Transactional
-    // 处理当前代码结构。
     public void touchSession(ChatSession session) {
-        // 执行当前语句。
+        // 保存当前对象到持久化层。
         chatSessionRepository.save(session);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `loadMessageCounts` 操作。
-     *
-     * @param sessions 输入参数 `sessions`。
-     * @return 类型为 `Map<String, Long>` 的返回值。
+     * 处理load消息counts相关逻辑。
+     * @param sessions 会话参数。
+     * @return long>结果。
      */
-    // 处理当前代码结构。
     private Map<String, Long> loadMessageCounts(List<ChatSession> sessions) {
-        // 处理当前代码结构。
+        // 围绕会话ids会话补充当前业务语句。
         List<String> sessionIds = sessions.stream()
-                // 处理当前代码结构。
+                // 设置map字段的取值。
                 .map(ChatSession::getId)
-                // 执行当前语句。
+                // 设置tolist字段的取值。
                 .toList();
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (sessionIds.isEmpty()) {
-            // 返回当前结果。
+            // 返回固定映射结果。
             return Map.of();
-        // 结束当前代码块。
         }
 
-        // 返回当前结果。
+        // 返回 `countBySessionIds` 的处理结果。
         return chatMessageRepository.countBySessionIds(sessionIds).stream()
-                // 处理当前代码结构。
+                // 设置collect字段的取值。
                 .collect(Collectors.toMap(
-                        // 处理当前代码结构。
+                        // 围绕rowrow补充当前业务语句。
                         row -> (String) row[0],
-                        // 处理当前代码结构。
+                        // 围绕rowrow补充当前业务语句。
                         row -> (Long) row[1]
-                // 执行当前语句。
+                // 继续补全当前链式调用或多行表达式。
                 ));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `toResponse` 操作。
-     *
-     * @param session 输入参数 `session`。
-     * @param messages 输入参数 `messages`。
-     * @return 类型为 `ChatSessionResponse` 的返回值。
+     * 处理to响应相关逻辑。
+     * @param session 会话参数。
+     * @param messages 消息参数。
+     * @return 问答会话响应结果。
      */
-    // 处理当前代码结构。
     private ChatSessionResponse toResponse(ChatSession session, List<ChatMessage> messages) {
-        // 返回当前结果。
+        // 返回组装完成的结果对象。
         return ChatSessionResponse.builder()
-                // 处理当前代码结构。
+                // 设置id字段的取值。
                 .id(session.getId())
-                // 处理当前代码结构。
+                // 设置标题字段的取值。
                 .title(session.getTitle())
-                // 处理当前代码结构。
+                // 设置createdat字段的取值。
                 .createdAt(session.getCreatedAt())
-                // 处理当前代码结构。
+                // 设置updatedat字段的取值。
                 .updatedAt(session.getUpdatedAt())
-                // 处理当前代码结构。
+                // 设置消息字段的取值。
                 .messages(messages.stream()
-                        // 处理当前代码结构。
+                        // 设置map字段的取值。
                         .map(this::toMessageResponse)
-                        // 处理当前代码结构。
+                        // 设置tolist字段的取值。
                         .toList())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `toMessageResponse` 操作。
-     *
-     * @param message 输入参数 `message`。
-     * @return 类型为 `ChatMessageResponse` 的返回值。
+     * 处理to消息响应相关逻辑。
+     * @param message 消息参数。
+     * @return 问答消息响应结果。
      */
-    // 处理当前代码结构。
     private ChatMessageResponse toMessageResponse(ChatMessage message) {
-        // 返回当前结果。
+        // 返回组装完成的结果对象。
         return ChatMessageResponse.builder()
-                // 处理当前代码结构。
+                // 设置id字段的取值。
                 .id(message.getId())
-                // 处理当前代码结构。
+                // 设置role字段的取值。
                 .role(message.getRole())
-                // 处理当前代码结构。
+                // 设置内容字段的取值。
                 .content(message.getContent())
-                // 处理当前代码结构。
+                // 设置createdat字段的取值。
                 .createdAt(message.getCreatedAt())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `resolveTitle` 操作。
-     *
-     * @param title 输入参数 `title`。
-     * @return 类型为 `String` 的返回值。
+     * 处理resolve标题相关逻辑。
+     * @param title 标题参数。
+     * @return 处理后的字符串结果。
      */
-    // 处理当前代码结构。
     private String resolveTitle(String title) {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (!StringUtils.hasText(title)) {
-            // 返回当前结果。
+            // 返回"newsession"。
             return "New Session";
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回 `trim` 的处理结果。
         return title.trim();
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

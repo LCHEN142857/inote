@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.security;
 
 import com.inote.model.entity.User;
@@ -19,90 +19,77 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// 应用当前注解。
+// 为当前测试类启用指定扩展。
 @ExtendWith(MockitoExtension.class)
-// 声明当前类型。
+// 定义 `AuthContextFilterTest` 类型。
 class AuthContextFilterTest {
 
-    // 应用当前注解。
+    // 将当前依赖替换为 Mockito 模拟对象。
     @Mock
-    // 声明当前字段。
+    // 声明用户repository变量，供后续流程使用。
     private UserRepository userRepository;
 
-    // 应用当前注解。
+    // 将当前依赖替换为 Mockito 模拟对象。
     @Mock
-    // 声明当前字段。
+    // 声明filterchain变量，供后续流程使用。
     private FilterChain filterChain;
 
     /**
-     * 描述 `tearDown` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理teardown相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 应用 `AfterEach` 注解声明当前行为。
     @AfterEach
-    // 处理当前代码结构。
     void tearDown() throws Exception {
-        // 执行当前语句。
+        // 调用 `clear` 完成当前步骤。
         CurrentUserHolder.clear();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `doFilterInternalSetsCurrentUserAndClearsItAfterChain` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理dofilterinternalsets当前用户andclearsitafterchain相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void doFilterInternalSetsCurrentUserAndClearsItAfterChain() throws Exception {
-        // 执行当前语句。
+        // 创建filter对象。
         AuthContextFilter filter = new AuthContextFilter(userRepository);
-        // 执行当前语句。
+        // 创建请求对象。
         MockHttpServletRequest request = new MockHttpServletRequest();
-        // 执行当前语句。
+        // 创建响应对象。
         MockHttpServletResponse response = new MockHttpServletResponse();
-        // 执行当前语句。
+        // 计算并保存用户结果。
         User user = TestDataFactory.user("user-1", "tester", "token-1");
-        // 执行当前语句。
+        // 调用 `addHeader` 完成当前步骤。
         request.addHeader(AuthContextFilter.AUTH_HEADER, "token-1");
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(userRepository.findByAuthToken("token-1")).thenReturn(Optional.of(user));
-        // 执行当前语句。
+        // 调用 `doFilter` 完成当前步骤。
         filter.doFilter(request, response, filterChain);
-        // 执行当前语句。
+        // 校验依赖调用是否符合预期。
         verify(filterChain).doFilter(request, response);
-        // 执行当前语句。
+        // 定义当前类型。
         assertThatThrownBy(CurrentUserHolder::getRequired).isInstanceOf(UnauthorizedException.class).hasMessage("Authentication required");
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `doFilterInternalLeavesContextEmptyWhenHeaderIsMissing` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理dofilterinternalleaves上下文emptywhenheaderismissing相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void doFilterInternalLeavesContextEmptyWhenHeaderIsMissing() throws Exception {
-        // 执行当前语句。
+        // 创建filter对象。
         AuthContextFilter filter = new AuthContextFilter(userRepository);
-        // 执行当前语句。
+        // 创建请求对象。
         MockHttpServletRequest request = new MockHttpServletRequest();
-        // 执行当前语句。
+        // 创建响应对象。
         MockHttpServletResponse response = new MockHttpServletResponse();
-        // 执行当前语句。
+        // 调用 `doFilter` 完成当前步骤。
         filter.doFilter(request, response, filterChain);
-        // 执行当前语句。
+        // 校验依赖调用是否符合预期。
         verify(filterChain).doFilter(request, response);
-        // 执行当前语句。
+        // 定义当前类型。
         assertThatThrownBy(CurrentUserHolder::getRequired).isInstanceOf(UnauthorizedException.class).hasMessage("Authentication required");
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

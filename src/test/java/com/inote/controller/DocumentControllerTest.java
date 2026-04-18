@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.controller;
 
 import com.inote.model.dto.DocumentStatusResponse;
@@ -35,445 +35,386 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// 应用当前注解。
+// 应用 `WebMvcTest` 注解声明当前行为。
 @WebMvcTest(DocumentController.class)
-// 应用当前注解。
+// 在测试环境中注入 MockMvc。
 @AutoConfigureMockMvc(addFilters = false)
-// 声明当前类型。
+// 定义 `DocumentControllerTest` 类型。
 class DocumentControllerTest {
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明mockmvc变量，供后续流程使用。
     private MockMvc mockMvc;
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明文档controller变量，供后续流程使用。
     private DocumentController documentController;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明文档service变量，供后续流程使用。
     private DocumentService documentService;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明用户repository变量，供后续流程使用。
     private UserRepository userRepository;
 
-    // 应用当前注解。
+    // 为当前测试注入临时目录。
     @TempDir
-    // 声明当前字段。
+    // 声明tempdir变量，供后续流程使用。
     Path tempDir;
 
-    // 声明当前字段。
+    // 声明上传root变量，供后续流程使用。
     private Path uploadRoot;
-    // 声明当前字段。
+    // 声明uploaded文件变量，供后续流程使用。
     private Path uploadedFile;
-    // 声明当前字段。
+    // 声明external文件变量，供后续流程使用。
     private Path externalFile;
 
     /**
-     * 描述 `setUp` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理setup相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法在每个测试前执行。
     @BeforeEach
-    // 处理当前代码结构。
     void setUp() throws Exception {
-        // 执行当前语句。
+        // 计算并保存上传root结果。
         uploadRoot = tempDir.resolve("uploads");
-        // 执行当前语句。
+        // 调用 `createDirectories` 完成当前步骤。
         Files.createDirectories(uploadRoot);
-        // 执行当前语句。
+        // 计算并保存uploaded文件结果。
         uploadedFile = uploadRoot.resolve("uploaded-sample.txt");
-        // 执行当前语句。
+        // 计算并保存external文件结果。
         externalFile = tempDir.resolve("external-sample.txt");
 
-        // 处理当前代码结构。
+        // 围绕文件writeuploaded补充当前业务语句。
         Files.writeString(uploadedFile, new ClassPathResource("test-files/uploaded-sample.txt")
-                // 执行当前语句。
+                // 设置get内容asstring字段的取值。
                 .getContentAsString(StandardCharsets.UTF_8));
-        // 处理当前代码结构。
+        // 围绕文件writeexternal补充当前业务语句。
         Files.writeString(externalFile, new ClassPathResource("test-files/external-sample.txt")
-                // 执行当前语句。
+                // 设置get内容asstring字段的取值。
                 .getContentAsString(StandardCharsets.UTF_8));
 
-        // 执行当前语句。
+        // 更新field字段。
         ReflectionTestUtils.setField(documentController, "uploadPath", uploadRoot.toString());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `uploadDocumentReturnsOkWhenServiceAcceptsFile` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理上传文档returnsokwhenserviceaccepts文件相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void uploadDocumentReturnsOkWhenServiceAcceptsFile() throws Exception {
-        // 处理当前代码结构。
+        // 围绕mockmultipart文件补充当前业务语句。
         MockMultipartFile file = new MockMultipartFile(
-                // 处理当前代码结构。
                 "file",
-                // 处理当前代码结构。
                 "uploaded-sample.txt",
-                // 处理当前代码结构。
+                // 围绕mediatypetext补充当前业务语句。
                 MediaType.TEXT_PLAIN_VALUE,
-                // 执行当前语句。
+                // 调用 `ClassPathResource` 完成当前步骤。
                 new ClassPathResource("test-files/uploaded-sample.txt").getInputStream());
 
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.uploadDocument(any())).thenReturn(DocumentUploadResponse.builder()
-                // 处理当前代码结构。
+                // 设置文档id字段的取值。
                 .documentId("doc-1")
-                // 处理当前代码结构。
+                // 设置文件name字段的取值。
                 .fileName("uploaded-sample.txt")
-                // 处理当前代码结构。
+                // 设置状态字段的取值。
                 .status("PARSING")
-                // 处理当前代码结构。
+                // 设置消息字段的取值。
                 .message("Upload accepted. Document parsing has started.")
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(multipart("/api/v1/documents/upload").file(file))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.documentId").value("doc-1"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.status").value("PARSING"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `uploadDocumentReturnsBadRequestWhenServiceMarksUploadAsFailed` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理上传文档returnsbad请求whenservicemarks上传asfailed相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void uploadDocumentReturnsBadRequestWhenServiceMarksUploadAsFailed() throws Exception {
-        // 处理当前代码结构。
+        // 围绕mockmultipart文件补充当前业务语句。
         MockMultipartFile file = new MockMultipartFile(
-                // 处理当前代码结构。
                 "file",
-                // 处理当前代码结构。
                 "uploaded-sample.txt",
-                // 处理当前代码结构。
+                // 围绕mediatypetext补充当前业务语句。
                 MediaType.TEXT_PLAIN_VALUE,
-                // 执行当前语句。
+                // 调用 `ClassPathResource` 完成当前步骤。
                 new ClassPathResource("test-files/uploaded-sample.txt").getInputStream());
 
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.uploadDocument(any())).thenReturn(DocumentUploadResponse.builder()
-                // 处理当前代码结构。
+                // 设置状态字段的取值。
                 .status("FAILED")
-                // 处理当前代码结构。
+                // 设置消息字段的取值。
                 .message("Unsupported file type")
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(multipart("/api/v1/documents/upload").file(file))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isBadRequest())
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.status").value("FAILED"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.message").value("Unsupported file type"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `uploadDocumentReturnsPayloadTooLargeWhenMultipartLimitIsExceeded` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理上传文档returnspayloadtoolargewhenmultipartlimitisexceeded相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void uploadDocumentReturnsPayloadTooLargeWhenMultipartLimitIsExceeded() throws Exception {
-        // 处理当前代码结构。
+        // 围绕mockmultipart文件补充当前业务语句。
         MockMultipartFile file = new MockMultipartFile(
-                // 处理当前代码结构。
                 "file",
-                // 处理当前代码结构。
                 "uploaded-sample.txt",
-                // 处理当前代码结构。
+                // 围绕mediatypetext补充当前业务语句。
                 MediaType.TEXT_PLAIN_VALUE,
-                // 执行当前语句。
+                // 调用 `ClassPathResource` 完成当前步骤。
                 new ClassPathResource("test-files/uploaded-sample.txt").getInputStream());
 
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.uploadDocument(any()))
-                // 执行当前语句。
+                // 设置thenthrow字段的取值。
                 .thenThrow(new org.springframework.web.multipart.MaxUploadSizeExceededException(1024));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(multipart("/api/v1/documents/upload").file(file))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isPayloadTooLarge())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.error").value("Uploaded file exceeds the configured size limit."));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `listDocumentsReturnsAllDocuments` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理list文档returnsall文档相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void listDocumentsReturnsAllDocuments() throws Exception {
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.listDocuments()).thenReturn(List.of(DocumentStatusResponse.builder()
-                // 处理当前代码结构。
+                // 设置文档id字段的取值。
                 .documentId("doc-1")
-                // 处理当前代码结构。
+                // 设置文件name字段的取值。
                 .fileName("uploaded-sample.txt")
-                // 处理当前代码结构。
+                // 设置文件size字段的取值。
                 .fileSize(12L)
-                // 处理当前代码结构。
+                // 设置状态字段的取值。
                 .status("COMPLETED")
-                // 处理当前代码结构。
+                // 设置updatedat字段的取值。
                 .updatedAt(LocalDateTime.of(2026, 4, 16, 12, 0))
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build()));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$[0].documentId").value("doc-1"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$[0].status").value("COMPLETED"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `listDocumentsReturnsUnauthorizedWhenUserIsMissing` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理list文档returnsunauthorizedwhen用户ismissing相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void listDocumentsReturnsUnauthorizedWhenUserIsMissing() throws Exception {
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(documentService.listDocuments()).thenThrow(new UnauthorizedException("Authentication required."));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isUnauthorized())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.error").value("Authentication required."));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `listDocumentsReturnsServerErrorWhenUnexpectedFailureHappens` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理list文档returnsserver错误信息whenunexpectedfailurehappens相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void listDocumentsReturnsServerErrorWhenUnexpectedFailureHappens() throws Exception {
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(documentService.listDocuments()).thenThrow(new RuntimeException("boom"));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isInternalServerError())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.answer").value("Unexpected server error. Please try again later."));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getDocumentStatusReturnsDocumentDetails` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理get文档状态returns文档details相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void getDocumentStatusReturnsDocumentDetails() throws Exception {
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.getDocumentStatus("doc-1")).thenReturn(DocumentStatusResponse.builder()
-                // 处理当前代码结构。
+                // 设置文档id字段的取值。
                 .documentId("doc-1")
-                // 处理当前代码结构。
+                // 设置文件name字段的取值。
                 .fileName("uploaded-sample.txt")
-                // 处理当前代码结构。
+                // 设置文件size字段的取值。
                 .fileSize(12L)
-                // 处理当前代码结构。
+                // 设置状态字段的取值。
                 .status("PARSING")
-                // 处理当前代码结构。
+                // 设置updatedat字段的取值。
                 .updatedAt(LocalDateTime.of(2026, 4, 16, 12, 0))
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents/doc-1"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.documentId").value("doc-1"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.status").value("PARSING"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getDocumentStatusReturnsNotFoundWhenDocumentDoesNotExist` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理get文档状态returnsnotfoundwhen文档doesnotexist相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void getDocumentStatusReturnsNotFoundWhenDocumentDoesNotExist() throws Exception {
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.getDocumentStatus("missing"))
-                // 执行当前语句。
+                // 设置thenthrow字段的取值。
                 .thenThrow(new EntityNotFoundException("Document not found: missing"));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents/missing"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isNotFound())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.error").value("Document not found: missing"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getDocumentStatusReturnsServerErrorWhenUnexpectedFailureHappens` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理get文档状态returnsserver错误信息whenunexpectedfailurehappens相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void getDocumentStatusReturnsServerErrorWhenUnexpectedFailureHappens() throws Exception {
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(documentService.getDocumentStatus("doc-1")).thenThrow(new RuntimeException("boom"));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents/doc-1"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isInternalServerError())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.answer").value("Unexpected server error. Please try again later."));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getFileReturnsResourceWhenFileExistsInsideUploadRoot` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理get文件returnsresourcewhen文件existsinside上传root相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void getFileReturnsResourceWhenFileExistsInsideUploadRoot() throws Exception {
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.getOwnedDocument("doc-1")).thenReturn(Document.builder()
-                // 处理当前代码结构。
+                // 设置id字段的取值。
                 .id("doc-1")
-                // 处理当前代码结构。
+                // 设置文件name字段的取值。
                 .fileName("uploaded-sample.txt")
-                // 处理当前代码结构。
+                // 设置文件path字段的取值。
                 .filePath(uploadedFile.toString())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents/files/doc-1"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(header().string("Content-Disposition", "inline; filename=\"uploaded-sample.txt\""));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getFileReturnsBadRequestWhenFileIsOutsideUploadRoot` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理get文件returnsbad请求when文件isoutside上传root相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void getFileReturnsBadRequestWhenFileIsOutsideUploadRoot() throws Exception {
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.getOwnedDocument("doc-2")).thenReturn(Document.builder()
-                // 处理当前代码结构。
+                // 设置id字段的取值。
                 .id("doc-2")
-                // 处理当前代码结构。
+                // 设置文件name字段的取值。
                 .fileName("external-sample.txt")
-                // 处理当前代码结构。
+                // 设置文件path字段的取值。
                 .filePath(externalFile.toString())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents/files/doc-2"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(status().isBadRequest());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getFileReturnsNotFoundWhenFileDoesNotExist` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理get文件returnsnotfoundwhen文件doesnotexist相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void getFileReturnsNotFoundWhenFileDoesNotExist() throws Exception {
-        // 处理当前代码结构。
+        // 围绕when文档service补充当前业务语句。
         when(documentService.getOwnedDocument("doc-3")).thenReturn(Document.builder()
-                // 处理当前代码结构。
+                // 设置id字段的取值。
                 .id("doc-3")
-                // 处理当前代码结构。
+                // 设置文件name字段的取值。
                 .fileName("missing.txt")
-                // 处理当前代码结构。
+                // 设置文件path字段的取值。
                 .filePath(uploadRoot.resolve("missing.txt").toString())
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/documents/files/doc-3"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(status().isNotFound());
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

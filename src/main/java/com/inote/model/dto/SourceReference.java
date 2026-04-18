@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.model.dto;
 
 import lombok.AllArgsConstructor;
@@ -6,20 +6,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// 应用当前注解。
+// 让 Lombok 为当前类型生成常用访问方法。
 @Data
-// 应用当前注解。
+// 让 Lombok 为当前类型生成建造者。
 @Builder
-// 应用当前注解。
+// 让 Lombok 生成无参构造函数。
 @NoArgsConstructor
-// 应用当前注解。
+// 让 Lombok 生成全参构造函数。
 @AllArgsConstructor
-// 声明当前类型。
+// 定义引用来源对象，标识回答对应的文档来源。
 public class SourceReference {
 
-    // 声明当前字段。
+    // 声明文件name变量，供后续流程使用。
     private String fileName;
-    // 声明当前字段。
+    // 声明url变量，供后续流程使用。
     private String url;
-// 结束当前代码块。
 }

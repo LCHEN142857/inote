@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.client;
 
 import lombok.extern.slf4j.Slf4j;
@@ -12,186 +12,154 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 声明当前类型。
+// 定义兜底模型适配器，负责主模型失败后的降级调用。
 public class FallbackChatModel implements ChatModel {
 
-    // 声明当前字段。
+    // 声明兜底模型name变量，供后续流程使用。
     private final String fallbackModelName;
-    // 声明当前字段。
+    // 声明兜底接口key变量，供后续流程使用。
     private final String fallbackApiKey;
-    // 声明当前字段。
+    // 声明兜底baseurl变量，供后续流程使用。
     private final String fallbackBaseUrl;
-    // 声明当前字段。
+    // 声明兜底问答模型变量，供后续流程使用。
     private ChatModel fallbackChatModel;
 
     /**
-     * 描述 `FallbackChatModel` 操作。
-     *
-     * @param fallbackModelName 输入参数 `fallbackModelName`。
-     * @param fallbackApiKey 输入参数 `fallbackApiKey`。
-     * @param fallbackBaseUrl 输入参数 `fallbackBaseUrl`。
-     * @return 构造完成的实例状态。
+     * 处理兜底问答模型相关逻辑。
+     * @param fallbackModelName 兜底模型name参数。
+     * @param fallbackApiKey 兜底接口key参数。
+     * @param fallbackBaseUrl 兜底baseurl参数。
      */
-    // 处理当前代码结构。
     public FallbackChatModel(String fallbackModelName, String fallbackApiKey, String fallbackBaseUrl) {
-        // 执行当前语句。
+        // 计算并保存this.fallback模型name结果。
         this.fallbackModelName = fallbackModelName;
-        // 执行当前语句。
+        // 计算并保存this.fallback接口key结果。
         this.fallbackApiKey = fallbackApiKey;
-        // 执行当前语句。
+        // 计算并保存this.fallbackbaseurl结果。
         this.fallbackBaseUrl = fallbackBaseUrl;
-        // 执行当前语句。
+        // 调用 `initFallbackModel` 完成当前步骤。
         initFallbackModel();
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `initFallbackModel` 操作。
-     *
-     * @return 无返回值。
+     * 处理init兜底模型相关逻辑。
      */
-    // 处理当前代码结构。
     private void initFallbackModel() {
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (fallbackApiKey != null && !fallbackApiKey.isEmpty()
-                    // 处理当前代码结构。
                     && !fallbackApiKey.equals("your-kimi-api-key-here")) {
-                // 执行当前语句。
+                // 创建openai接口对象。
                 OpenAiApi openAiApi = new OpenAiApi(fallbackBaseUrl, fallbackApiKey);
-                // 处理当前代码结构。
+                // 围绕openai问答补充当前业务语句。
                 OpenAiChatOptions options = OpenAiChatOptions.builder()
-                        // 处理当前代码结构。
+                        // 设置模型字段的取值。
                         .model(fallbackModelName)
-                        // 处理当前代码结构。
+                        // 设置temperature字段的取值。
                         .temperature(0.7)
-                        // 处理当前代码结构。
+                        // 设置maxtokens字段的取值。
                         .maxTokens(2000)
-                        // 执行当前语句。
+                        // 完成当前建造者对象的组装。
                         .build();
 
-                // 执行当前语句。
+                // 创建this.fallback问答模型对象。
                 this.fallbackChatModel = new OpenAiChatModel(openAiApi, options);
-                // 执行当前语句。
+                // 记录当前流程的运行日志。
                 log.info("Fallback model initialized: {}", fallbackModelName);
-            // 处理当前代码结构。
             } else {
-                // 执行当前语句。
+                // 记录当前流程的运行日志。
                 log.warn("Fallback API key not configured, fallback model will not be available");
-            // 结束当前代码块。
             }
-        // 处理当前代码结构。
         } catch (Exception e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.error("Failed to initialize fallback model: {}", e.getMessage());
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
-    /**
-     * 描述 `call` 操作。
-     *
-     * @param prompt 输入参数 `prompt`。
-     * @return 类型为 `ChatResponse` 的返回值。
-     */
-    // 应用当前注解。
+    // 声明当前方法重写父类或接口定义。
     @Override
-    // 应用当前注解。
+    // 应用 `Retryable` 注解声明当前行为。
     @Retryable(
-            // 处理当前代码结构。
+            // 定义当前类型。
             retryFor = {Exception.class},
-            // 处理当前代码结构。
+            // 围绕maxattempts补充当前业务语句。
             maxAttempts = 2,
-            // 处理当前代码结构。
+            // 围绕backoffbackoffdelay补充当前业务语句。
             backoff = @Backoff(delay = 1000)
-    // 处理当前代码结构。
+    // 继续补全当前链式调用或多行表达式。
     )
-    // 处理当前代码结构。
+    /**
+     * 处理call相关逻辑。
+     * @param prompt 提示词参数。
+     * @return 模型返回的聊天响应。
+     */
     public ChatResponse call(Prompt prompt) {
-        // 抛出当前异常。
+        // 抛出 `UnsupportedOperationException` 异常中断当前流程。
         throw new UnsupportedOperationException(
-            // 处理当前代码结构。
             "FallbackChatModel should be used with AiConfig to wrap the primary model"
-        // 执行当前语句。
         );
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `callWithFallback` 操作。
-     *
-     * @param primaryModel 输入参数 `primaryModel`。
-     * @param prompt 输入参数 `prompt`。
-     * @return 类型为 `ChatResponse` 的返回值。
+     * 处理callwith兜底相关逻辑。
+     * @param primaryModel primary模型参数。
+     * @param prompt 提示词参数。
+     * @return 模型返回的聊天响应。
      */
-    // 处理当前代码结构。
     public ChatResponse callWithFallback(ChatModel primaryModel, Prompt prompt) {
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.debug("Trying primary model...");
-            // 执行当前语句。
+            // 调用模型生成响应结果。
             ChatResponse response = primaryModel.call(prompt);
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.debug("Primary model succeeded");
-            // 返回当前结果。
+            // 返回响应。
             return response;
-        // 处理当前代码结构。
         } catch (Exception e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.warn("Primary model failed: {}, trying fallback model...", e.getMessage());
 
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (fallbackChatModel != null) {
-                // 执行当前流程控制分支。
+                // 进入异常保护块执行关键逻辑。
                 try {
-                    // 执行当前语句。
+                    // 调用模型生成兜底响应结果。
                     ChatResponse fallbackResponse = fallbackChatModel.call(prompt);
-                    // 执行当前语句。
+                    // 记录当前流程的运行日志。
                     log.info("Fallback model succeeded");
-                    // 返回当前结果。
+                    // 返回兜底响应。
                     return fallbackResponse;
-                // 处理当前代码结构。
                 } catch (Exception fallbackException) {
-                    // 执行当前语句。
+                    // 记录当前流程的运行日志。
                     log.error("Fallback model also failed: {}", fallbackException.getMessage());
-                    // 抛出当前异常。
+                    // 抛出 `RuntimeException` 异常中断当前流程。
                     throw new RuntimeException("Both primary and fallback models failed", fallbackException);
-                // 结束当前代码块。
                 }
-            // 处理当前代码结构。
             } else {
-                // 抛出当前异常。
+                // 抛出 `RuntimeException` 异常中断当前流程。
                 throw new RuntimeException("Primary model failed and no fallback available", e);
-            // 结束当前代码块。
             }
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getDefaultOptions` 操作。
-     *
-     * @return 类型为 `ChatOptions` 的返回值。
+     * 处理getdefaultoptions相关逻辑。
+     * @return 问答options结果。
      */
-    // 应用当前注解。
+    // 声明当前方法重写父类或接口定义。
     @Override
-    // 处理当前代码结构。
     public ChatOptions getDefaultOptions() {
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (fallbackChatModel != null) {
-            // 返回当前结果。
+            // 返回 `getDefaultOptions` 的处理结果。
             return fallbackChatModel.getDefaultOptions();
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回空值，表示当前没有可用结果。
         return null;
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

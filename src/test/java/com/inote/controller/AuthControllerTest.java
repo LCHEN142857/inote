@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,311 +28,256 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// 应用当前注解。
+// 应用 `WebMvcTest` 注解声明当前行为。
 @WebMvcTest(AuthController.class)
-// 应用当前注解。
+// 在测试环境中注入 MockMvc。
 @AutoConfigureMockMvc(addFilters = false)
-// 声明当前类型。
+// 定义 `AuthControllerTest` 类型。
 class AuthControllerTest {
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明mockmvc变量，供后续流程使用。
     private MockMvc mockMvc;
 
-    // 应用当前注解。
+    // 从 Spring 容器中注入当前依赖。
     @Autowired
-    // 声明当前字段。
+    // 声明objectmapper变量，供后续流程使用。
     private ObjectMapper objectMapper;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明认证service变量，供后续流程使用。
     private AuthService authService;
 
-    // 应用当前注解。
+    // 在 Spring 测试上下文中注册模拟对象。
     @MockBean
-    // 声明当前字段。
+    // 声明用户repository变量，供后续流程使用。
     private UserRepository userRepository;
 
     /**
-     * 描述 `captchaReturnsCaptchaPayload` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理验证码returns验证码payload相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void captchaReturnsCaptchaPayload() throws Exception {
-        // 处理当前代码结构。
+        // 围绕when认证service补充当前业务语句。
         when(authService.generateCaptcha()).thenReturn(AuthCaptchaResponse.builder()
-                // 处理当前代码结构。
+                // 设置验证码id字段的取值。
                 .captchaId("captcha-1")
-                // 处理当前代码结构。
+                // 设置验证码code字段的取值。
                 .captchaCode("ABCD")
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/auth/captcha"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.captchaId").value("captcha-1"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.captchaCode").value("ABCD"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `loginReturnsAuthResponseWhenRequestIsValid` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理登录returns认证响应when请求isvalid相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void loginReturnsAuthResponseWhenRequestIsValid() throws Exception {
-        // 处理当前代码结构。
+        // 定义当前类型。
         when(authService.loginOrRegister(any(AuthLoginRequest.class))).thenReturn(AuthResponse.builder()
-                // 处理当前代码结构。
+                // 设置令牌字段的取值。
                 .token("token-1")
-                // 处理当前代码结构。
+                // 设置username字段的取值。
                 .username("tester")
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(post("/api/v1/auth/login")
-                        // 处理当前代码结构。
+                        // 设置内容type字段的取值。
                         .contentType(MediaType.APPLICATION_JSON)
-                        // 处理当前代码结构。
+                        // 设置内容字段的取值。
                         .content(objectMapper.writeValueAsString(Map.of(
-                                // 处理当前代码结构。
                                 "username", "tester",
-                                // 处理当前代码结构。
                                 "password", "secret123",
-                                // 处理当前代码结构。
                                 "captchaId", "captcha-1",
-                                // 处理当前代码结构。
                                 "captchaCode", "ABCD"))))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.token").value("token-1"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.username").value("tester"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `loginReturnsBadRequestWhenValidationFails` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理登录returnsbad请求whenvalidationfails相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void loginReturnsBadRequestWhenValidationFails() throws Exception {
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(post("/api/v1/auth/login")
-                        // 处理当前代码结构。
+                        // 设置内容type字段的取值。
                         .contentType(MediaType.APPLICATION_JSON)
-                        // 处理当前代码结构。
+                        // 设置内容字段的取值。
                         .content(objectMapper.writeValueAsString(Map.of(
-                                // 处理当前代码结构。
                                 "username", "",
-                                // 处理当前代码结构。
                                 "password", "secret123",
-                                // 处理当前代码结构。
                                 "captchaId", "captcha-1",
-                                // 处理当前代码结构。
                                 "captchaCode", "ABCD"))))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isBadRequest())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.username").value("username must not be blank"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `loginReturnsUnauthorizedWhenServiceRejectsCredentials` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理登录returnsunauthorizedwhenservicerejectscredentials相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void loginReturnsUnauthorizedWhenServiceRejectsCredentials() throws Exception {
-        // 处理当前代码结构。
+        // 定义当前类型。
         when(authService.loginOrRegister(any(AuthLoginRequest.class)))
-                // 执行当前语句。
+                // 设置thenthrow字段的取值。
                 .thenThrow(new UnauthorizedException("Username or password is incorrect."));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(post("/api/v1/auth/login")
-                        // 处理当前代码结构。
+                        // 设置内容type字段的取值。
                         .contentType(MediaType.APPLICATION_JSON)
-                        // 处理当前代码结构。
+                        // 设置内容字段的取值。
                         .content(objectMapper.writeValueAsString(Map.of(
-                                // 处理当前代码结构。
                                 "username", "tester",
-                                // 处理当前代码结构。
                                 "password", "secret123",
-                                // 处理当前代码结构。
                                 "captchaId", "captcha-1",
-                                // 处理当前代码结构。
                                 "captchaCode", "ABCD"))))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isUnauthorized())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.error").value("Username or password is incorrect."));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `meReturnsCurrentUser` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理mereturns当前用户相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void meReturnsCurrentUser() throws Exception {
-        // 处理当前代码结构。
+        // 围绕when认证service补充当前业务语句。
         when(authService.currentUser()).thenReturn(AuthResponse.builder()
-                // 处理当前代码结构。
+                // 设置令牌字段的取值。
                 .token("token-2")
-                // 处理当前代码结构。
+                // 设置username字段的取值。
                 .username("current-user")
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build());
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/auth/me"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.token").value("token-2"))
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.username").value("current-user"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `meReturnsUnauthorizedWhenNoCurrentUserExists` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理mereturnsunauthorizedwhenno当前用户exists相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void meReturnsUnauthorizedWhenNoCurrentUserExists() throws Exception {
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(authService.currentUser()).thenThrow(new UnauthorizedException("Authentication required."));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(get("/api/v1/auth/me"))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isUnauthorized())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.error").value("Authentication required."));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `resetPasswordReturnsSuccessMessageWhenRequestIsValid` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理reset密码returnssuccess消息when请求isvalid相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void resetPasswordReturnsSuccessMessageWhenRequestIsValid() throws Exception {
-        // 执行当前语句。
+        // 定义当前类型。
         doNothing().when(authService).resetPassword(any(ResetPasswordRequest.class));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(post("/api/v1/auth/password/reset")
-                        // 处理当前代码结构。
+                        // 设置内容type字段的取值。
                         .contentType(MediaType.APPLICATION_JSON)
-                        // 处理当前代码结构。
+                        // 设置内容字段的取值。
                         .content(objectMapper.writeValueAsString(Map.of(
-                                // 处理当前代码结构。
                                 "newPassword", "secret123",
-                                // 处理当前代码结构。
                                 "confirmPassword", "secret123"))))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isOk())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.message").value("Password reset successful. Please use the new password next time."));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `resetPasswordReturnsBadRequestWhenValidationFails` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理reset密码returnsbad请求whenvalidationfails相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void resetPasswordReturnsBadRequestWhenValidationFails() throws Exception {
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(post("/api/v1/auth/password/reset")
-                        // 处理当前代码结构。
+                        // 设置内容type字段的取值。
                         .contentType(MediaType.APPLICATION_JSON)
-                        // 处理当前代码结构。
+                        // 设置内容字段的取值。
                         .content(objectMapper.writeValueAsString(Map.of(
-                                // 处理当前代码结构。
                                 "newPassword", "",
-                                // 处理当前代码结构。
                                 "confirmPassword", "secret123"))))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isBadRequest())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.newPassword").value("newPassword must not be blank"));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `resetPasswordReturnsBadRequestWhenServiceRejectsRequest` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理reset密码returnsbad请求whenservicerejects请求相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void resetPasswordReturnsBadRequestWhenServiceRejectsRequest() throws Exception {
-        // 处理当前代码结构。
+        // 围绕dothrowillegal补充当前业务语句。
         doThrow(new IllegalArgumentException("The two password entries do not match."))
-                // 执行当前语句。
+                // 定义当前类型。
                 .when(authService).resetPassword(any(ResetPasswordRequest.class));
 
-        // 处理当前代码结构。
+        // 发起当前接口的集成测试请求。
         mockMvc.perform(post("/api/v1/auth/password/reset")
-                        // 处理当前代码结构。
+                        // 设置内容type字段的取值。
                         .contentType(MediaType.APPLICATION_JSON)
-                        // 处理当前代码结构。
+                        // 设置内容字段的取值。
                         .content(objectMapper.writeValueAsString(Map.of(
-                                // 处理当前代码结构。
                                 "newPassword", "secret123",
-                                // 处理当前代码结构。
                                 "confirmPassword", "secret456"))))
-                // 处理当前代码结构。
+                // 继续校验接口响应结果。
                 .andExpect(status().isBadRequest())
-                // 执行当前语句。
+                // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.error").value("The two password entries do not match."));
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

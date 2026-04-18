@@ -1,25 +1,21 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.logging;
 
 import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
-// 声明当前类型。
+// 定义运行时端点转换器，用于输出当前请求端点。
 public class RuntimeEndpointConverter extends ClassicConverter {
 
     /**
-     * 描述 `convert` 操作。
-     *
-     * @param event 输入参数 `event`。
-     * @return 类型为 `String` 的返回值。
+     * 处理convert相关逻辑。
+     * @param event event参数。
+     * @return 处理后的字符串结果。
      */
-    // 应用当前注解。
+    // 声明当前方法重写父类或接口定义。
     @Override
-    // 处理当前代码结构。
     public String convert(ILoggingEvent event) {
-        // 返回当前结果。
+        // 返回 `getEndpoint` 的处理结果。
         return RuntimeEndpointHolder.getEndpoint();
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

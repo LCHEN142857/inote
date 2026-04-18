@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.service.retrieval;
 
 import com.inote.config.RagProperties;
@@ -18,132 +18,119 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// 应用当前注解。
+// 为当前测试类启用指定扩展。
 @ExtendWith(MockitoExtension.class)
-// 声明当前类型。
+// 定义 `RetrievalPipelineServiceTest` 类型。
 class RetrievalPipelineServiceTest {
 
-    // 声明当前字段。
+    // 声明ragproperties变量，供后续流程使用。
     private RagProperties ragProperties;
 
-    // 应用当前注解。
+    // 将当前依赖替换为 Mockito 模拟对象。
     @Mock
-    // 声明当前字段。
+    // 声明查询改写service变量，供后续流程使用。
     private QueryRewriteService queryRewriteService;
 
-    // 应用当前注解。
+    // 将当前依赖替换为 Mockito 模拟对象。
     @Mock
-    // 声明当前字段。
+    // 声明查询拆分service变量，供后续流程使用。
     private QueryDecompositionService queryDecompositionService;
 
-    // 应用当前注解。
+    // 将当前依赖替换为 Mockito 模拟对象。
     @Mock
-    // 声明当前字段。
+    // 声明hybrid检索service变量，供后续流程使用。
     private HybridRetrievalService hybridRetrievalService;
 
-    // 应用当前注解。
+    // 将当前依赖替换为 Mockito 模拟对象。
     @Mock
-    // 声明当前字段。
+    // 声明重排service变量，供后续流程使用。
     private RerankService rerankService;
 
-    // 应用当前注解。
+    // 将模拟依赖注入被测对象。
     @InjectMocks
-    // 声明当前字段。
+    // 声明检索pipelineservice变量，供后续流程使用。
     private RetrievalPipelineService retrievalPipelineService;
 
     /**
-     * 描述 `setUp` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理setup相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法在每个测试前执行。
     @BeforeEach
-    // 处理当前代码结构。
     void setUp() throws Exception {
-        // 执行当前语句。
+        // 创建ragproperties对象。
         ragProperties = new RagProperties();
-        // 执行当前语句。
+        // 更新查询改写enabled字段。
         ragProperties.setQueryRewriteEnabled(false);
-        // 执行当前语句。
+        // 更新multi查询enabled字段。
         ragProperties.setMultiQueryEnabled(false);
-        // 执行当前语句。
+        // 更新重排enabled字段。
         ragProperties.setRerankEnabled(false);
-        // 执行当前语句。
+        // 更新finaltopk字段。
         ragProperties.setFinalTopK(2);
-        // 执行当前语句。
+        // 更新field字段。
         org.springframework.test.util.ReflectionTestUtils.setField(retrievalPipelineService, "ragProperties", ragProperties);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `retrieveUsesShortestPathWhenOptionalStagesAreDisabled` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理retrieveusesshortestpathwhenoptionalstagesaredisabled相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void retrieveUsesShortestPathWhenOptionalStagesAreDisabled() throws Exception {
-        // 执行当前语句。
+        // 创建first文档对象。
         Document firstDocument = new Document("doc-1", Map.of("file_name", "a.txt"));
-        // 执行当前语句。
+        // 创建second文档对象。
         Document secondDocument = new Document("doc-2", Map.of("file_name", "b.txt"));
-        // 执行当前语句。
+        // 创建third文档对象。
         Document thirdDocument = new Document("doc-3", Map.of("file_name", "c.txt"));
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(hybridRetrievalService.retrieve("question")).thenReturn(List.of(firstDocument, secondDocument, thirdDocument));
-        // 执行当前语句。
+        // 执行检索流程并获取候选文档。
         RetrievalResult result = retrievalPipelineService.retrieve("question");
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(result.searchQuery()).isEqualTo("question");
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(result.documents()).hasSize(2);
-        // 执行当前语句。
+        // 校验依赖调用是否符合预期。
         verify(queryRewriteService, never()).rewrite("question");
-        // 执行当前语句。
+        // 校验依赖调用是否符合预期。
         verify(queryDecompositionService, never()).decompose("question");
-        // 执行当前语句。
+        // 校验依赖调用是否符合预期。
         verify(rerankService, never()).rerank(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyInt());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `retrieveRewritesQueryAndDeduplicatesAcrossSubQueries` 操作。
-     *
-     * @return 无返回值。
-     * @throws Exception 已声明的异常类型 `Exception`。
+     * 处理retrieverewrites查询anddeduplicatesacross子queries相关逻辑。
+     * @throws Exception 当前流程出现异常时抛出。
      */
-    // 应用当前注解。
+    // 声明当前方法为测试用例。
     @Test
-    // 处理当前代码结构。
     void retrieveRewritesQueryAndDeduplicatesAcrossSubQueries() throws Exception {
-        // 执行当前语句。
+        // 更新查询改写enabled字段。
         ragProperties.setQueryRewriteEnabled(true);
-        // 执行当前语句。
+        // 更新multi查询enabled字段。
         ragProperties.setMultiQueryEnabled(true);
-        // 执行当前语句。
+        // 开始构建shared文档对象。
         Document sharedDocument = Document.builder().id("shared-id").text("shared").metadata(Map.of("file_name", "shared.txt")).build();
-        // 执行当前语句。
+        // 开始构建unique文档对象。
         Document uniqueDocument = Document.builder().id("unique-id").text("unique").metadata(Map.of("file_name", "unique.txt")).build();
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(queryRewriteService.rewrite("question")).thenReturn("rewritten question");
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(queryDecompositionService.decompose("rewritten question")).thenReturn(List.of("query-a", "query-b"));
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(hybridRetrievalService.retrieve("query-a")).thenReturn(List.of(sharedDocument));
-        // 执行当前语句。
+        // 为当前测试场景预设模拟对象行为。
         when(hybridRetrievalService.retrieve("query-b")).thenReturn(List.of(sharedDocument, uniqueDocument));
-        // 执行当前语句。
+        // 执行检索流程并获取候选文档。
         RetrievalResult result = retrievalPipelineService.retrieve("question");
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(result.searchQuery()).isEqualTo("rewritten question");
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(result.documents()).hasSize(2);
-        // 执行当前语句。
+        // 断言当前结果符合测试预期。
         assertThat(result.documents()).extracting(Document::getId).containsExactly("shared-id", "unique-id");
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

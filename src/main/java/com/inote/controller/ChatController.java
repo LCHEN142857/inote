@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.controller;
 
 import com.inote.model.dto.ChatRequest;
@@ -25,118 +25,93 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 声明当前类提供 REST 风格接口。
 @RestController
-// 应用当前注解。
+// 声明当前控制器的统一请求路径前缀。
 @RequestMapping("/api/v1/chat")
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义问答接口控制器，负责聊天问答和会话管理接口。
 public class ChatController {
 
-    // 声明当前字段。
+    // 声明问答service变量，供后续流程使用。
     private final ChatService chatService;
-    // 声明当前字段。
+    // 声明问答会话service变量，供后续流程使用。
     private final ChatSessionService chatSessionService;
 
     /**
-     * 描述 `query` 操作。
-     *
-     * @param request 输入参数 `request`。
-     * @return 类型为 `ResponseEntity<InoteResponse>` 的返回值。
+     * 接收问答请求并返回模型回答结果。
+     * @param request 请求参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 POST 请求。
     @PostMapping("/query")
-    // 处理当前代码结构。
     public ResponseEntity<InoteResponse> query(@Valid @RequestBody ChatRequest request) {
-        // 执行当前语句。
+        // 计算并保存会话id结果。
         log.info("Received chat query, sessionId={}", request.getSessionId());
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(chatService.query(request));
-    // 结束当前代码块。
     }
 
-    /**
-     * 描述 `createSession` 操作。
-     *
-     * @param request 输入参数 `request`。
-     * @return 类型为 `ResponseEntity<ChatSessionResponse>` 的返回值。
-     */
-    // 应用当前注解。
+    // 声明当前方法处理 POST 请求。
     @PostMapping("/sessions")
-    // 处理当前代码结构。
+    // 围绕响应entity问答补充当前业务语句。
     public ResponseEntity<ChatSessionResponse> createSession(@RequestBody(required = false) ChatSessionCreateRequest request) {
-        // 返回当前结果。
+        // 按指定状态码返回响应。
         return ResponseEntity.status(HttpStatus.CREATED).body(chatSessionService.createSession(request));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `listSessions` 操作。
-     *
-     * @return 类型为 `ResponseEntity<List<ChatSessionSummaryResponse>>` 的返回值。
+     * 返回当前用户的会话列表。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 GET 请求。
     @GetMapping("/sessions")
-    // 处理当前代码结构。
     public ResponseEntity<List<ChatSessionSummaryResponse>> listSessions() {
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(chatSessionService.listSessions());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getSession` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @return 类型为 `ResponseEntity<ChatSessionResponse>` 的返回值。
+     * 返回指定会话的完整详情。
+     * @param sessionId 会话id参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 GET 请求。
     @GetMapping("/sessions/{sessionId}")
-    // 处理当前代码结构。
     public ResponseEntity<ChatSessionResponse> getSession(@PathVariable String sessionId) {
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(chatSessionService.getSession(sessionId));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `updateSession` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @param request 输入参数 `request`。
-     * @return 类型为 `ResponseEntity<ChatSessionResponse>` 的返回值。
+     * 更新指定会话的标题。
+     * @param sessionId 会话id参数。
+     * @param request 请求参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 PUT 请求。
     @PutMapping("/sessions/{sessionId}")
-    // 处理当前代码结构。
     public ResponseEntity<ChatSessionResponse> updateSession(
-            // 应用当前注解。
             @PathVariable String sessionId,
-            // 应用当前注解。
             @Valid @RequestBody ChatSessionUpdateRequest request) {
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(chatSessionService.updateSession(sessionId, request));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `deleteSession` 操作。
-     *
-     * @param sessionId 输入参数 `sessionId`。
-     * @return 类型为 `ResponseEntity<Void>` 的返回值。
+     * 删除指定会话。
+     * @param sessionId 会话id参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 DELETE 请求。
     @DeleteMapping("/sessions/{sessionId}")
-    // 处理当前代码结构。
     public ResponseEntity<Void> deleteSession(@PathVariable String sessionId) {
-        // 执行当前语句。
+        // 删除当前持久化数据。
         chatSessionService.deleteSession(sessionId);
-        // 返回当前结果。
+        // 返回无内容响应。
         return ResponseEntity.noContent().build();
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

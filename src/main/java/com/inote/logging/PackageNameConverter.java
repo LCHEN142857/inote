@@ -1,44 +1,38 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.logging;
 
 import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
-// 声明当前类型。
+// 定义日志包名转换器，用于压缩日志中的包路径。
 public class PackageNameConverter extends ClassicConverter {
 
     /**
-     * 描述 `convert` 操作。
-     *
-     * @param event 输入参数 `event`。
-     * @return 类型为 `String` 的返回值。
+     * 处理convert相关逻辑。
+     * @param event event参数。
+     * @return 处理后的字符串结果。
      */
-    // 应用当前注解。
+    // 声明当前方法重写父类或接口定义。
     @Override
-    // 处理当前代码结构。
     public String convert(ILoggingEvent event) {
-        // 执行当前语句。
+        // 计算并保存callerdata结果。
         StackTraceElement[] callerData = event.getCallerData();
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (callerData == null || callerData.length == 0) {
-            // 返回当前结果。
+            // 返回"n/a"。
             return "N/A";
-        // 结束当前代码块。
         }
 
-        // 执行当前语句。
+        // 计算并保存classname结果。
         String className = callerData[0].getClassName();
-        // 执行当前语句。
+        // 计算并保存lastdotindex结果。
         int lastDotIndex = className.lastIndexOf('.');
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if (lastDotIndex <= 0) {
-            // 返回当前结果。
+            // 返回classname。
             return className;
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回 `substring` 的处理结果。
         return className.substring(0, lastDotIndex);
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.controller;
 
 import com.inote.model.dto.DocumentStatusResponse;
@@ -25,129 +25,111 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 声明当前类提供 REST 风格接口。
 @RestController
-// 应用当前注解。
+// 声明当前控制器的统一请求路径前缀。
 @RequestMapping("/api/v1/documents")
-// 应用当前注解。
+// 让 Lombok 为当前类生成必填依赖构造函数。
 @RequiredArgsConstructor
-// 声明当前类型。
+// 定义文档接口控制器，负责上传、列表、状态和文件访问接口。
 public class DocumentController {
 
-    // 声明当前字段。
+    // 声明文档service变量，供后续流程使用。
     private final DocumentService documentService;
 
-    // 应用当前注解。
+    // 从配置文件中注入当前字段的取值。
     @Value("${file.upload.path:./uploads}")
-    // 声明当前字段。
+    // 声明上传path变量，供后续流程使用。
     private String uploadPath;
 
     /**
-     * 描述 `uploadDocument` 操作。
-     *
-     * @param file 输入参数 `file`。
-     * @return 类型为 `ResponseEntity<DocumentUploadResponse>` 的返回值。
+     * 接收用户上传的文件并启动文档处理流程。
+     * @param file 文件参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 POST 请求。
     @PostMapping("/upload")
-    // 处理当前代码结构。
     public ResponseEntity<DocumentUploadResponse> uploadDocument(@RequestParam("file") MultipartFile file) {
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.info("Received file upload request: {}", file.getOriginalFilename());
-        // 执行当前语句。
+        // 计算并保存响应结果。
         DocumentUploadResponse response = documentService.uploadDocument(file);
-        // 执行当前流程控制分支。
+        // 根据条件判断当前分支是否执行。
         if ("FAILED".equals(response.getStatus())) {
-            // 返回当前结果。
+            // 返回参数错误响应。
             return ResponseEntity.badRequest().body(response);
-        // 结束当前代码块。
         }
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(response);
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `listDocuments` 操作。
-     *
-     * @return 类型为 `ResponseEntity<List<DocumentStatusResponse>>` 的返回值。
+     * 返回当前用户的文档列表。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 GET 请求。
     @GetMapping
-    // 处理当前代码结构。
     public ResponseEntity<List<DocumentStatusResponse>> listDocuments() {
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(documentService.listDocuments());
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getDocumentStatus` 操作。
-     *
-     * @param documentId 输入参数 `documentId`。
-     * @return 类型为 `ResponseEntity<DocumentStatusResponse>` 的返回值。
+     * 返回指定文档的处理状态。
+     * @param documentId 文档id参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 GET 请求。
     @GetMapping("/{documentId}")
-    // 处理当前代码结构。
     public ResponseEntity<DocumentStatusResponse> getDocumentStatus(@PathVariable String documentId) {
-        // 返回当前结果。
+        // 返回成功响应。
         return ResponseEntity.ok(documentService.getDocumentStatus(documentId));
-    // 结束当前代码块。
     }
 
     /**
-     * 描述 `getFile` 操作。
-     *
-     * @param documentId 输入参数 `documentId`。
-     * @return 类型为 `ResponseEntity<Resource>` 的返回值。
+     * 校验文件归属后输出原始文档内容。
+     * @param documentId 文档id参数。
+     * @return 封装后的 HTTP 响应结果。
      */
-    // 应用当前注解。
+    // 声明当前方法处理 GET 请求。
     @GetMapping("/files/{documentId}")
-    // 处理当前代码结构。
     public ResponseEntity<Resource> getFile(@PathVariable String documentId) {
-        // 执行当前流程控制分支。
+        // 进入异常保护块执行关键逻辑。
         try {
-            // 执行当前语句。
+            // 计算并保存文档结果。
             Document document = documentService.getOwnedDocument(documentId);
-            // 执行当前语句。
+            // 计算并保存上传root结果。
             Path uploadRoot = Paths.get(uploadPath).toAbsolutePath().normalize();
-            // 执行当前语句。
+            // 计算并保存文件path结果。
             Path filePath = Paths.get(document.getFilePath()).toAbsolutePath().normalize();
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (!filePath.startsWith(uploadRoot)) {
-                // 执行当前语句。
+                // 记录当前流程的运行日志。
                 log.warn("Blocked file access outside upload directory: {}", documentId);
-                // 返回当前结果。
+                // 返回参数错误响应。
                 return ResponseEntity.badRequest().build();
-            // 结束当前代码块。
             }
 
-            // 执行当前语句。
+            // 创建resource对象。
             Resource resource = new UrlResource(filePath.toUri());
-            // 执行当前流程控制分支。
+            // 根据条件判断当前分支是否执行。
             if (resource.exists() && resource.isReadable()) {
-                // 返回当前结果。
+                // 返回成功响应。
                 return ResponseEntity.ok()
-                        // 处理当前代码结构。
+                        // 设置header字段的取值。
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + document.getFileName() + "\"")
-                        // 执行当前语句。
+                        // 设置body字段的取值。
                         .body(resource);
-            // 结束当前代码块。
             }
-            // 返回当前结果。
+            // 返回未找到响应。
             return ResponseEntity.notFound().build();
-        // 处理当前代码结构。
         } catch (MalformedURLException e) {
-            // 执行当前语句。
+            // 记录当前流程的运行日志。
             log.error("Invalid file path for document: {}", documentId, e);
-            // 返回当前结果。
+            // 返回参数错误响应。
             return ResponseEntity.badRequest().build();
-        // 结束当前代码块。
         }
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }

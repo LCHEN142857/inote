@@ -1,4 +1,4 @@
-// 声明当前源文件的包。
+// 声明当前源文件所属包。
 package com.inote.config;
 
 import io.milvus.client.MilvusServiceClient;
@@ -8,54 +8,50 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-// 应用当前注解。
+// 启用当前类的日志记录能力。
 @Slf4j
-// 应用当前注解。
+// 声明当前类提供 Spring 配置。
 @Configuration
-// 声明当前类型。
+// 定义向量库配置，负责初始化 Milvus 相关 Bean。
 public class MilvusConfig {
 
-    // 应用当前注解。
+    // 从配置文件中注入当前字段的取值。
     @Value("${spring.ai.vectorstore.milvus.client.host:localhost}")
-    // 声明当前字段。
+    // 声明host变量，供后续流程使用。
     private String host;
 
-    // 应用当前注解。
+    // 从配置文件中注入当前字段的取值。
     @Value("${spring.ai.vectorstore.milvus.client.port:19530}")
-    // 声明当前字段。
+    // 声明port变量，供后续流程使用。
     private int port;
 
-    // 应用当前注解。
+    // 从配置文件中注入当前字段的取值。
     @Value("${spring.ai.vectorstore.milvus.database-name:default}")
-    // 声明当前字段。
+    // 声明databasename变量，供后续流程使用。
     private String databaseName;
 
     /**
-     * 描述 `milvusClient` 操作。
-     *
-     * @return 类型为 `MilvusServiceClient` 的返回值。
+     * 处理milvusclient相关逻辑。
+     * @return milvusserviceclient结果。
      */
-    // 应用当前注解。
+    // 声明当前方法向容器提供 Bean。
     @Bean
-    // 处理当前代码结构。
     public MilvusServiceClient milvusClient() {
-        // 执行当前语句。
+        // 记录当前流程的运行日志。
         log.info("Initializing Milvus client: {}:{}", host, port);
 
-        // 处理当前代码结构。
+        // 围绕connectparamconnect补充当前业务语句。
         ConnectParam connectParam = ConnectParam.newBuilder()
-                // 处理当前代码结构。
+                // 设置withhost字段的取值。
                 .withHost(host)
-                // 处理当前代码结构。
+                // 设置withport字段的取值。
                 .withPort(port)
-                // 处理当前代码结构。
+                // 设置withdatabasename字段的取值。
                 .withDatabaseName(databaseName)
-                // 执行当前语句。
+                // 完成当前建造者对象的组装。
                 .build();
 
-        // 返回当前结果。
+        // 返回 `MilvusServiceClient` 的处理结果。
         return new MilvusServiceClient(connectParam);
-    // 结束当前代码块。
     }
-// 结束当前代码块。
 }
