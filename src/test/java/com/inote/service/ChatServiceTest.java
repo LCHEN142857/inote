@@ -27,7 +27,9 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -146,7 +148,9 @@ class ChatServiceTest {
         // 为当前测试场景预设模拟对象行为。
         when(retrievalPipelineService.retrieve("Summarize the uploaded files")).thenReturn(new RetrievalResult("Summarize the uploaded files", "Summarize the uploaded files", List.of(firstDocument, secondDocument)));
         // 定义当前类型。
-        when(fallbackChatModel.callWithFallback(eq(chatModel), any(Prompt.class))).thenReturn(modelResponse);
+        doReturn(modelResponse)
+                .when(fallbackChatModel)
+                .callWithFallback(isA(ChatModel.class), isA(Prompt.class));
         // 计算并保存响应结果。
         var response = chatService.query(request);
         // 断言当前结果符合测试预期。
@@ -171,7 +175,9 @@ class ChatServiceTest {
         // 为当前测试场景预设模拟对象行为。
         when(retrievalPipelineService.retrieve("Answer from docs")).thenReturn(new RetrievalResult("Answer from docs", "Answer from docs", List.of(document)));
         // 定义当前类型。
-        when(fallbackChatModel.callWithFallback(eq(chatModel), any(Prompt.class))).thenThrow(new RuntimeException("boom"));
+        doThrow(new RuntimeException("boom"))
+                .when(fallbackChatModel)
+                .callWithFallback(isA(ChatModel.class), isA(Prompt.class));
         // 计算并保存响应结果。
         var response = chatService.query(request);
         // 断言当前结果符合测试预期。

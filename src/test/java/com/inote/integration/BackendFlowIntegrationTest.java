@@ -212,7 +212,7 @@ class BackendFlowIntegrationTest {
         // 为当前测试场景预设模拟对象行为。
         when(documentProcessingService.saveFile(any(), anyString())).thenReturn(tempDir.resolve("uploads").resolve("saved-notes.txt"));
         // 定义当前类型。
-        doNothing().when(documentProcessingService).processDocumentAsync(any(Document.class), any(), anyString());
+        doNothing().when(documentProcessingService).processDocumentAsync(anyString(), anyString());
         // 发起当前接口的集成测试请求。
         mockMvc.perform(multipart("/api/v1/documents/upload").file(file).header("X-Auth-Token", "token-1"))
                 // 继续校验接口响应结果。
