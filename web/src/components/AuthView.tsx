@@ -24,21 +24,34 @@ export function AuthView(props: AuthViewProps) {
 
         <label className="auth-field">
           <span>用户名</span>
-          <input value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} />
         </label>
 
         <label className="auth-field">
           <span>密码</span>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input autoComplete="current-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
 
         <label className="auth-field">
           <span>验证码</span>
           <div className="captcha-row">
-            <input value={captchaCode} onChange={(e) => setCaptchaCode(e.target.value)} />
-            <button className="captcha-badge" onClick={props.onRefresh} disabled={props.loading}>
-              {props.loading ? "加载中" : props.captcha?.captchaCode ?? "刷新"}
-            </button>
+            <input
+              autoComplete="one-time-code"
+              inputMode="text"
+              maxLength={4}
+              value={captchaCode}
+              onChange={(e) => setCaptchaCode(e.target.value)}
+            />
+            <div className="captcha-preview">
+              {props.captcha?.captchaImage ? (
+                <img className="captcha-image" src={props.captcha.captchaImage} alt="验证码图片" draggable={false} />
+              ) : (
+                <div className="captcha-placeholder">{props.loading ? "加载中" : "等待刷新"}</div>
+              )}
+              <button className="captcha-refresh" type="button" onClick={props.onRefresh} disabled={props.loading}>
+                换一张
+              </button>
+            </div>
           </div>
         </label>
 

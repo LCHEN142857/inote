@@ -5,7 +5,7 @@ export interface SourceReference {
 
 export interface AuthCaptcha {
   captchaId: string;
-  captchaCode: string;
+  captchaImage: string;
 }
 
 export interface AuthResponse {

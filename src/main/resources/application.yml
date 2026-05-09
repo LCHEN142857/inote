@@ -81,7 +81,3 @@ logging:
   level:
     com.inote: DEBUG
     org.springframework.ai: DEBUG
-
-app:
-  auth:
-    captcha-length: 6

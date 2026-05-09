@@ -1,7 +1,6 @@
 // 声明当前源文件所属包。
 package com.inote.service;
 
-import com.inote.config.AuthProperties;
 import com.inote.model.dto.AuthCaptchaResponse;
 import com.inote.model.dto.AuthLoginRequest;
 import com.inote.model.dto.AuthResponse;
@@ -30,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 // 定义认证服务，负责验证码校验、登录注册和密码重置逻辑。
 public class AuthService {
 
+    // 固定验证码长度为 4 位字母数字组合。
+    private static final int CAPTCHA_LENGTH = 4;
     // 计算并保存验证码来源结果。
     private static final String CAPTCHA_SOURCE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     // 计算并保存验证码ttl结果。
@@ -41,8 +42,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     // 声明当前用户service变量，供后续流程使用。
     private final CurrentUserService currentUserService;
-    // 声明认证properties变量，供后续流程使用。
-    private final AuthProperties authProperties;
+    // 声明验证码图片渲染器变量，供后续流程使用。
+    private final CaptchaImageRenderer captchaImageRenderer;
     // 创建securerandom对象。
     private final SecureRandom secureRandom = new SecureRandom();
     // 创建captchas对象。
@@ -58,15 +59,17 @@ public class AuthService {
         // 生成验证码id随机值。
         String captchaId = UUID.randomUUID().toString();
         // 计算并保存验证码code结果。
-        String captchaCode = randomAlphaNumeric(authProperties.getCaptchaLength());
+        String captchaCode = randomAlphaNumeric(CAPTCHA_LENGTH);
         // 写入当前映射中的键值对。
         captchas.put(captchaId, new CaptchaEntry(captchaCode, LocalDateTime.now().plus(CAPTCHA_TTL)));
+        // 将验证码内容渲染为仅供人眼识别的图片。
+        String captchaImage = captchaImageRenderer.renderAsDataUri(captchaCode);
         // 返回组装完成的结果对象。
         return AuthCaptchaResponse.builder()
                 // 设置验证码id字段的取值。
                 .captchaId(captchaId)
-                // 设置验证码code字段的取值。
-                .captchaCode(captchaCode)
+                // 设置验证码图片字段的取值。
+                .captchaImage(captchaImage)
                 // 完成当前建造者对象的组装。
                 .build();
     }

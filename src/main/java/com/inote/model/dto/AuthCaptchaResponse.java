@@ -14,11 +14,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 // 让 Lombok 生成全参构造函数。
 @AllArgsConstructor
-// 定义验证码响应对象，返回验证码标识和验证码内容。
+// 定义验证码响应对象，返回验证码标识和验证码图片。
 public class AuthCaptchaResponse {
 
     // 声明验证码id变量，供后续流程使用。
     private String captchaId;
-    // 声明验证码code变量，供后续流程使用。
-    private String captchaCode;
+    // 声明验证码图片变量，供后续流程使用。
+    private String captchaImage;
 }
