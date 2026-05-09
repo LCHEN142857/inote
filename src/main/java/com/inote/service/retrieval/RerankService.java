@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.inote.config.RagProperties;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,17 +23,15 @@ import java.util.stream.Collectors;
 @Slf4j
 // 将当前类注册为服务组件。
 @Service
-// 让 Lombok 为当前类生成必填依赖构造函数。
-@RequiredArgsConstructor
 // 定义重排服务，负责调用外部接口优化候选文档顺序。
 public class RerankService {
 
     // 声明ragproperties变量，供后续流程使用。
-    private final RagProperties ragProperties;
+    private RagProperties ragProperties;
     // 声明接口key变量，供后续流程使用。
-    private final String apiKey;
+    private String apiKey;
     // 声明restclient变量，供后续流程使用。
-    private final RestClient restClient;
+    private RestClient restClient;
 
     // 定义重排url常量。
     private static final String RERANK_URL =
