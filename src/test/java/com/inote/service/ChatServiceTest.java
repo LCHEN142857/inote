@@ -84,7 +84,7 @@ class ChatServiceTest {
         // 计算并保存响应结果。
         var response = chatService.query(request);
         // 断言当前结果符合测试预期。
-        assertThat(response.getAnswer()).isEqualTo("The current documents do not provide enough information to answer this question.");
+        assertThat(response.getAnswer()).isEqualTo("当前文档信息不足，无法回答这个问题。");
         // 断言当前结果符合测试预期。
         assertThat(response.getSessionId()).isNull();
         // 定义当前类型。

@@ -101,7 +101,7 @@ public class ChatService {
             // 记录当前流程的运行日志。
             log.warn("No relevant documents found for query: {}", question);
             // 计算并保存回答结果。
-            answer = "The current documents do not provide enough information to answer this question.";
+            answer = "当前文档信息不足，无法回答这个问题。";
         } else {
             // 计算并保存上下文结果。
             String context = buildContext(relevantDocs);

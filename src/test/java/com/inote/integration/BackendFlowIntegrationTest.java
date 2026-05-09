@@ -189,7 +189,7 @@ class BackendFlowIntegrationTest {
                 // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.sessionId").value("session-1"))
                 // 继续校验接口响应结果。
-                .andExpect(jsonPath("$.answer").value("The current documents do not provide enough information to answer this question."));
+                .andExpect(jsonPath("$.answer").value("当前文档信息不足，无法回答这个问题。"));
         // 断言当前结果符合测试预期。
         assertThat(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(session.getId())).hasSize(2);
         // 断言当前结果符合测试预期。
