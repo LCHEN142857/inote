@@ -10,6 +10,7 @@ bin-release/
 # Executables
 .idea
 .claude
+.codex
 target
 uploads
 *.swf
@@ -25,3 +26,5 @@ uploads
 src/main/resources/application-local.yml
 
 web/node_modules
+
+*.log
