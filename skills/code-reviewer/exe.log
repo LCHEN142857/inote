@@ -15,3 +15,16 @@ Findings:
 Summary:
 - The 5-failure lockout, server-side 60-second rejection, and frontend countdown are implemented coherently.
 - No blocking defect was found in the single-instance path.
+
+Review: DDoS rate limiting
+Commit scope:
+- src/main/java/com/inote/security/ClientIpResolver.java
+- src/main/java/com/inote/security/RequestRateLimitService.java
+- src/main/java/com/inote/security/RequestRateLimitFilter.java
+
+Findings:
+- [suggestion] `RequestRateLimitService` keeps a bucket for every seen `(path, ip)` pair and never evicts idle entries. On a long-running node that receives traffic from many unique IPs, this can grow without bound.
+
+Summary:
+- The filter rejects excessive `/api/*` traffic before it reaches controllers and applies stricter buckets to auth endpoints.
+- No blocking defect was found in the local-path implementation.

@@ -5,6 +5,7 @@ import com.inote.model.dto.AuthCaptchaResponse;
 import com.inote.model.dto.AuthLoginRequest;
 import com.inote.model.dto.AuthResponse;
 import com.inote.model.dto.ResetPasswordRequest;
+import com.inote.security.ClientIpResolver;
 import com.inote.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -50,7 +51,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthLoginRequest request, HttpServletRequest httpRequest) {
         // 返回成功响应。
-        return ResponseEntity.ok(authService.loginOrRegister(request, resolveClientIp(httpRequest)));
+        return ResponseEntity.ok(authService.loginOrRegister(request, ClientIpResolver.resolve(httpRequest)));
     }
 
     /**
@@ -78,14 +79,4 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Password reset successful. Please use the new password next time."));
     }
 
-    private String resolveClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            String[] parts = forwardedFor.split(",");
-            if (parts.length > 0 && !parts[0].isBlank()) {
-                return parts[0].trim();
-            }
-        }
-        return request.getRemoteAddr();
-    }
 }
