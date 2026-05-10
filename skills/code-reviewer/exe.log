@@ -28,3 +28,17 @@ Findings:
 Summary:
 - The filter rejects excessive `/api/*` traffic before it reaches controllers and applies stricter buckets to auth endpoints.
 - No blocking defect was found in the local-path implementation.
+
+Review: 500ms replay protection
+Commit scope:
+- src/main/java/com/inote/security/CachedBodyHttpServletRequest.java
+- src/main/java/com/inote/security/ReplayProtectionFilter.java
+- src/main/java/com/inote/security/ReplayProtectionService.java
+
+Findings:
+- [suggestion] Multipart uploads do not get full body canonicalization; the fallback fingerprint only uses URI, IP, username, token, content type, and content length. That is acceptable as a safety tradeoff, but it is not a perfect match for the requested "same interface parameters" rule on large uploads.
+- [suggestion] Replay fingerprints are stored in-process only, so duplicate submission protection is not shared across nodes or restarts.
+
+Summary:
+- Login submissions and mutating authenticated API requests are checked before controller execution, and duplicate submissions within 500ms are rejected with 409.
+- No blocking defect was found in the local-path implementation.
