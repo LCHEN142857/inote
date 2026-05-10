@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -58,7 +59,7 @@ class AuthControllerTest {
 
     @Test
     void loginReturnsAuthResponseWhenRequestIsValid() throws Exception {
-        when(authService.loginOrRegister(any(AuthLoginRequest.class))).thenReturn(AuthResponse.builder()
+        when(authService.loginOrRegister(any(AuthLoginRequest.class), anyString())).thenReturn(AuthResponse.builder()
                 .token("token-1")
                 .username("tester")
                 .build());
@@ -90,7 +91,7 @@ class AuthControllerTest {
 
     @Test
     void loginReturnsUnauthorizedWhenServiceRejectsCredentials() throws Exception {
-        when(authService.loginOrRegister(any(AuthLoginRequest.class)))
+        when(authService.loginOrRegister(any(AuthLoginRequest.class), anyString()))
                 .thenThrow(new UnauthorizedException("Username or password is incorrect."));
 
         mockMvc.perform(post("/api/v1/auth/login")

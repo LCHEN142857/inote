@@ -1,0 +1,17 @@
+Review: login lockout and countdown
+Commit scope:
+- src/main/java/com/inote/controller/AuthController.java
+- src/main/java/com/inote/config/GlobalExceptionHandler.java
+- src/main/java/com/inote/service/AuthService.java
+- src/main/java/com/inote/service/LoginLockService.java
+- src/main/java/com/inote/service/LoginLockException.java
+- web/src/App.tsx
+- web/src/api.ts
+- web/src/components/AuthView.tsx
+
+Findings:
+- [suggestion] The lock state is stored only in-process in `LoginLockService`, so it will not be shared across multiple app instances or survive restarts. If this project is ever deployed behind a load balancer, the 60-second lock can be bypassed by hitting a different node.
+
+Summary:
+- The 5-failure lockout, server-side 60-second rejection, and frontend countdown are implemented coherently.
+- No blocking defect was found in the single-instance path.

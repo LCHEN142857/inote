@@ -44,6 +44,8 @@ public class AuthService {
     private final CurrentUserService currentUserService;
     // 声明验证码图片渲染器变量，供后续流程使用。
     private final CaptchaImageRenderer captchaImageRenderer;
+    // 声明登录锁定service变量，供后续流程使用。
+    private final LoginLockService loginLockService;
     // 创建securerandom对象。
     private final SecureRandom secureRandom = new SecureRandom();
     // 创建captchas对象。
@@ -79,36 +81,50 @@ public class AuthService {
      * @param request 请求参数。
      * @return 认证响应结果。
      */
-    public AuthResponse loginOrRegister(AuthLoginRequest request) {
-        // 调用 `validateCaptcha` 完成当前步骤。
-        validateCaptcha(request.getCaptchaId(), request.getCaptchaCode());
-
+    public AuthResponse loginOrRegister(AuthLoginRequest request, String clientIp) {
         // 计算并保存username结果。
         String username = normalizeUsername(request.getUsername());
-        // 清理并规范化密码内容。
-        String password = request.getPassword().trim();
-        // 调用 `validatePassword` 完成当前步骤。
-        validatePassword(password);
+        // 调用 `assertNotLocked` 完成当前步骤。
+        loginLockService.assertNotLocked(username, clientIp);
 
-        // 围绕用户用户用户补充当前业务语句。
-        User user = userRepository.findByUsername(username)
-                // 设置map字段的取值。
-                .map(existing -> validateLogin(existing, password))
-                // 设置orelseget字段的取值。
-                .orElseGet(() -> registerUser(username, password));
+        // 进入异常保护块执行关键逻辑。
+        try {
+            // 调用 `validateCaptcha` 完成当前步骤。
+            validateCaptcha(request.getCaptchaId(), request.getCaptchaCode());
 
-        // 更新认证令牌字段。
-        user.setAuthToken(generateAuthToken());
-        // 保存saved对象。
-        User saved = userRepository.save(user);
-        // 返回组装完成的结果对象。
-        return AuthResponse.builder()
-                // 设置令牌字段的取值。
-                .token(saved.getAuthToken())
-                // 设置username字段的取值。
-                .username(saved.getUsername())
-                // 完成当前建造者对象的组装。
-                .build();
+            // 清理并规范化密码内容。
+            String password = request.getPassword().trim();
+            // 调用 `validatePassword` 完成当前步骤。
+            validatePassword(password);
+
+            // 围绕用户用户用户补充当前业务语句。
+            User user = userRepository.findByUsername(username)
+                    // 设置map字段的取值。
+                    .map(existing -> validateLogin(existing, password))
+                    // 设置orelseget字段的取值。
+                    .orElseGet(() -> registerUser(username, password));
+
+            // 调用 `clear` 完成当前步骤。
+            loginLockService.clear(username, clientIp);
+
+            // 更新认证令牌字段。
+            user.setAuthToken(generateAuthToken());
+            // 保存saved对象。
+            User saved = userRepository.save(user);
+            // 返回组装完成的结果对象。
+            return AuthResponse.builder()
+                    // 设置令牌字段的取值。
+                    .token(saved.getAuthToken())
+                    // 设置username字段的取值。
+                    .username(saved.getUsername())
+                    // 完成当前建造者对象的组装。
+                    .build();
+        } catch (IllegalArgumentException | UnauthorizedException ex) {
+            // 调用 `recordFailure` 完成当前步骤。
+            loginLockService.recordFailure(username, clientIp);
+            // 继续抛出原始认证错误。
+            throw ex;
+        }
     }
 
     /**

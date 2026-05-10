@@ -10,6 +10,17 @@ import type {
 
 let authToken = window.localStorage.getItem("inote-auth-token") ?? "";
 
+export class ApiError extends Error {
+  status: number;
+  details: Record<string, unknown>;
+
+  constructor(message: string, status: number, details: Record<string, unknown>) {
+    super(message);
+    this.status = status;
+    this.details = details;
+  }
+}
+
 function buildHeaders(init?: RequestInit) {
   const headers = new Headers(init?.headers ?? {});
   if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) {
@@ -21,12 +32,11 @@ function buildHeaders(init?: RequestInit) {
   return headers;
 }
 
-async function readErrorMessage(response: Response) {
+async function readErrorBody(response: Response) {
   try {
-    const data = (await response.json()) as { error?: string; message?: string };
-    return data.error || data.message || JSON.stringify(data);
+    return (await response.json()) as Record<string, unknown>;
   } catch {
-    return await response.text();
+    return { error: await response.text() };
   }
 }
 
@@ -37,7 +47,9 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error((await readErrorMessage(response)) || "Request failed");
+    const body = await readErrorBody(response);
+    const message = typeof body.error === "string" ? body.error : typeof body.message === "string" ? body.message : "Request failed";
+    throw new ApiError(message, response.status, body);
   }
 
   if (response.status === 204) {
@@ -106,7 +118,9 @@ export const api = {
     });
 
     if (!response.ok) {
-      throw new Error((await readErrorMessage(response)) || "Upload failed");
+      const body = await readErrorBody(response);
+      const message = typeof body.error === "string" ? body.error : typeof body.message === "string" ? body.message : "Upload failed";
+      throw new ApiError(message, response.status, body);
     }
 
     return (await response.json()) as DocumentUploadResponse;

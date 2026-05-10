@@ -1,6 +1,7 @@
 package com.inote.config;
 
 import com.inote.security.UnauthorizedException;
+import com.inote.service.LoginLockException;
 import com.inote.service.DocumentStorageException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Map<String, String>> handleUnauthorized(UnauthorizedException ex) {
         return error(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    @ExceptionHandler(LoginLockException.class)
+    public ResponseEntity<Map<String, Object>> handleLoginLock(LoginLockException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", ex.getMessage());
+        body.put("lockSeconds", ex.getLockSeconds());
+        body.put("lockedUntilEpochMillis", ex.getLockedUntilEpochMillis());
+        return ResponseEntity.status(HttpStatus.LOCKED).body(body);
     }
 
     @ExceptionHandler(DocumentStorageException.class)

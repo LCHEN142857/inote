@@ -6,6 +6,7 @@ import com.inote.model.dto.AuthLoginRequest;
 import com.inote.model.dto.AuthResponse;
 import com.inote.model.dto.ResetPasswordRequest;
 import com.inote.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -47,9 +48,9 @@ public class AuthController {
      */
     // 声明当前方法处理 POST 请求。
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthLoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthLoginRequest request, HttpServletRequest httpRequest) {
         // 返回成功响应。
-        return ResponseEntity.ok(authService.loginOrRegister(request));
+        return ResponseEntity.ok(authService.loginOrRegister(request, resolveClientIp(httpRequest)));
     }
 
     /**
@@ -75,5 +76,16 @@ public class AuthController {
         authService.resetPassword(request);
         // 返回成功响应。
         return ResponseEntity.ok(Map.of("message", "Password reset successful. Please use the new password next time."));
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            String[] parts = forwardedFor.split(",");
+            if (parts.length > 0 && !parts[0].isBlank()) {
+                return parts[0].trim();
+            }
+        }
+        return request.getRemoteAddr();
     }
 }

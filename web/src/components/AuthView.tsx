@@ -6,6 +6,7 @@ type AuthViewProps = {
   loading: boolean;
   submitting: boolean;
   error: string;
+  loginLockRemaining: number;
   onRefresh: () => void;
   onSubmit: (payload: { username: string; password: string; captchaCode: string }) => void;
 };
@@ -56,13 +57,20 @@ export function AuthView(props: AuthViewProps) {
         </label>
 
         {props.error ? <div className="error-banner auth-error">{props.error}</div> : null}
+        {props.loginLockRemaining > 0 ? (
+          <div className="error-banner auth-error">登录已锁定，请等待 {props.loginLockRemaining} 秒</div>
+        ) : null}
 
         <button
           className="primary-button"
           onClick={() => props.onSubmit({ username, password, captchaCode })}
-          disabled={props.submitting || props.loading || !props.captcha}
+          disabled={props.submitting || props.loading || !props.captcha || props.loginLockRemaining > 0}
         >
-          {props.submitting ? "提交中" : "登录 / 注册"}
+          {props.loginLockRemaining > 0
+            ? `锁定中 ${props.loginLockRemaining}s`
+            : props.submitting
+              ? "提交中"
+              : "登录 / 注册"}
         </button>
       </div>
     </div>

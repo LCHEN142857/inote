@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "./api";
+import { ApiError, api } from "./api";
 import { AuthView } from "./components/AuthView";
 import { ChatWorkspace } from "./components/ChatWorkspace";
 import { KnowledgePanel } from "./components/KnowledgePanel";
@@ -25,6 +25,8 @@ export default function App() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState("");
   const [captcha, setCaptcha] = useState<AuthCaptcha | null>(null);
+  const [loginLockUntil, setLoginLockUntil] = useState(0);
+  const [loginLockRemaining, setLoginLockRemaining] = useState(0);
 
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [documents, setDocuments] = useState<DocumentStatus[]>([]);
@@ -61,6 +63,26 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem(PINNED_SESSIONS_KEY, JSON.stringify(pinnedSessionIds));
   }, [pinnedSessionIds]);
+
+  useEffect(() => {
+    if (loginLockUntil <= Date.now()) {
+      setLoginLockRemaining(0);
+      return;
+    }
+
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((loginLockUntil - Date.now()) / 1000));
+      setLoginLockRemaining(remaining);
+      if (remaining <= 0) {
+        setLoginLockUntil(0);
+        setAuthError("");
+      }
+    };
+
+    tick();
+    const timer = window.setInterval(tick, 250);
+    return () => window.clearInterval(timer);
+  }, [loginLockUntil]);
 
   const activeAnswerMeta =
     latestAnswerMeta && latestAnswerMeta.sessionId === selectedSession?.id
@@ -124,6 +146,8 @@ export default function App() {
       api.setToken(token);
       const user = await api.me();
       setAuthUser(user);
+      setLoginLockUntil(0);
+      setLoginLockRemaining(0);
       await bootstrapWorkspace();
     } catch {
       api.setToken("");
@@ -169,10 +193,19 @@ export default function App() {
       });
       api.setToken(user.token);
       setAuthUser(user);
+      setLoginLockUntil(0);
+      setLoginLockRemaining(0);
       await bootstrapWorkspace();
       await refreshCaptcha();
     } catch (loginError) {
-      setAuthError(loginError instanceof Error ? loginError.message : "登录失败");
+      if (loginError instanceof ApiError && loginError.status === 423) {
+        const lockedUntil = Number(loginError.details.lockedUntilEpochMillis);
+        const remaining = Number(loginError.details.lockSeconds) || 60;
+        setLoginLockUntil(Number.isFinite(lockedUntil) && lockedUntil > Date.now() ? lockedUntil : Date.now() + remaining * 1000);
+        setAuthError(loginError.message);
+      } else {
+        setAuthError(loginError instanceof Error ? loginError.message : "登录失败");
+      }
       await refreshCaptcha();
     } finally {
       setAuthSubmitting(false);
@@ -190,6 +223,8 @@ export default function App() {
     setComposer("");
     setError("");
     setPasswordDialogOpen(false);
+    setLoginLockUntil(0);
+    setLoginLockRemaining(0);
     void refreshCaptcha();
   }
 
@@ -374,6 +409,7 @@ export default function App() {
         loading={authLoading}
         submitting={authSubmitting}
         error={authError}
+        loginLockRemaining={loginLockRemaining}
         onRefresh={() => void refreshCaptcha()}
         onSubmit={(payload) => void handleLogin(payload)}
       />

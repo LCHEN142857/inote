@@ -44,6 +44,9 @@ class AuthServiceTest {
     @Mock
     private CaptchaImageRenderer captchaImageRenderer;
 
+    @Mock
+    private LoginLockService loginLockService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -76,7 +79,7 @@ class AuthServiceTest {
                 .captchaCode(captchaCode)
                 .build();
 
-        var response = authService.loginOrRegister(request);
+        var response = authService.loginOrRegister(request, "127.0.0.1");
 
         ArgumentCaptor<User> savedUserCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(savedUserCaptor.capture());
@@ -102,7 +105,7 @@ class AuthServiceTest {
                 .captchaCode(captchaCode)
                 .build();
 
-        assertThatThrownBy(() -> authService.loginOrRegister(request))
+        assertThatThrownBy(() -> authService.loginOrRegister(request, "127.0.0.1"))
                 .isInstanceOf(UnauthorizedException.class)
                 .hasMessage("Username or password is incorrect.");
         verify(userRepository, never()).save(any(User.class));
