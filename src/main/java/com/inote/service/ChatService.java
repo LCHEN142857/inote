@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -53,6 +54,16 @@ public class ChatService {
             {context}
             """;
 
+    // 写入无参考文档时允许模型自由回答的提示词。
+    private static final String GENERAL_PROMPT = """
+            You are a helpful assistant.
+
+            Rules:
+            1. Answer the user's question using your general knowledge.
+            2. When chat history exists, use it to understand follow-up questions.
+            3. Keep the answer concise and accurate.
+            """;
+
     // 计算并保存max历史消息消息结果。
     private static final int MAX_HISTORY_MESSAGES = 20;
 
@@ -66,6 +77,8 @@ public class ChatService {
     private final ChatSessionService chatSessionService;
     // 声明问答消息repository变量，供后续流程使用。
     private final ChatMessageRepository chatMessageRepository;
+    // 声明用户设置service变量，供后续流程使用。
+    private final UserSettingsService userSettingsService;
 
     /**
      * 执行检索增强问答，并在需要时将问答内容保存到会话。
@@ -100,8 +113,14 @@ public class ChatService {
         if (relevantDocs.isEmpty()) {
             // 记录当前流程的运行日志。
             log.warn("No relevant documents found for query: {}", question);
-            // 计算并保存回答结果。
-            answer = "当前文档信息不足，无法回答这个问题。";
+            // 根据用户设置决定是否必须依赖参考文档回答。
+            if (userSettingsService.answerFromReferencesOnly()) {
+                // 计算并保存回答结果。
+                answer = "当前文档信息不足，无法回答这个问题。";
+            } else {
+                // 计算并保存回答结果。
+                answer = callModelWithFallback(buildGeneralPrompt(question, history));
+            }
         } else {
             // 计算并保存上下文结果。
             String context = buildContext(relevantDocs);
@@ -146,6 +165,25 @@ public class ChatService {
         List<Message> messages = new ArrayList<>();
         // 向当前集合中追加元素。
         messages.add(systemMessage);
+        // 调用 `addAll` 完成当前步骤。
+        messages.addAll(toPromptMessages(history));
+        // 向当前集合中追加元素。
+        messages.add(new UserMessage(question));
+        // 返回 `Prompt` 的处理结果。
+        return new Prompt(messages);
+    }
+
+    /**
+     * 组合通用提示词、历史消息和用户问题，构建无参考文档时的模型提示词。
+     * @param question 问题参数。
+     * @param history 历史消息参数。
+     * @return 组装完成的模型提示词。
+     */
+    private Prompt buildGeneralPrompt(String question, List<ChatMessage> history) {
+        // 创建消息对象。
+        List<Message> messages = new ArrayList<>();
+        // 向当前集合中追加元素。
+        messages.add(new SystemMessage(GENERAL_PROMPT));
         // 调用 `addAll` 完成当前步骤。
         messages.addAll(toPromptMessages(history));
         // 向当前集合中追加元素。

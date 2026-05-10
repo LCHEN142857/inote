@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import type { AuthResponse, ChatSession, LocalChatMessage, SourceReference } from "../types";
+import type { AuthResponse, ChatSession, LocalChatMessage, SourceReference, UserSettings } from "../types";
 import { formatTime, QUICK_PROMPTS } from "../utils";
 
 type ChatWorkspaceProps = {
@@ -15,6 +15,8 @@ type ChatWorkspaceProps = {
   composer: string;
   passwordDialogOpen: boolean;
   passwordSubmitting: boolean;
+  userSettings: UserSettings;
+  settingsSaving: boolean;
   newPassword: string;
   confirmPassword: string;
   messageEndRef: RefObject<HTMLDivElement>;
@@ -22,6 +24,7 @@ type ChatWorkspaceProps = {
   onOpenPasswordDialog: () => void;
   onClosePasswordDialog: () => void;
   onLogout: () => void;
+  onReferenceModeChange: (value: boolean) => void;
   onComposerChange: (value: string) => void;
   onSend: (prompt?: string) => void;
   onNewPasswordChange: (value: string) => void;
@@ -56,6 +59,18 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
           <span>{props.completedDocuments} 已入库</span>
           <span>{props.sessionsCount} 会话</span>
           {props.activeDocuments ? <span>{props.activeDocuments} 文档处理中</span> : null}
+          <label className="reference-switch">
+            <input
+              type="checkbox"
+              checked={props.userSettings.answerFromReferencesOnly}
+              disabled={props.settingsSaving}
+              onChange={(event) => props.onReferenceModeChange(event.target.checked)}
+            />
+            <span className="switch-track" aria-hidden="true">
+              <span className="switch-thumb" />
+            </span>
+            <span className="switch-label">请根据参考文档来回答</span>
+          </label>
           <button className="text-button" onClick={props.onOpenPasswordDialog}>
             忘记密码
           </button>

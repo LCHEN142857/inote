@@ -5,7 +5,8 @@ import type {
   ChatSessionSummary,
   DocumentStatus,
   DocumentUploadResponse,
-  InoteResponse
+  InoteResponse,
+  UserSettings
 } from "./types";
 
 let authToken = window.localStorage.getItem("inote-auth-token") ?? "";
@@ -80,6 +81,12 @@ export const api = {
       body: JSON.stringify(payload)
     }),
   me: () => request<AuthResponse>("/api/v1/auth/me"),
+  getSettings: () => request<UserSettings>("/api/v1/auth/settings"),
+  updateSettings: (answerFromReferencesOnly: boolean) =>
+    request<UserSettings>("/api/v1/auth/settings", {
+      method: "POST",
+      body: JSON.stringify({ answerFromReferencesOnly })
+    }),
   resetPassword: (newPassword: string, confirmPassword: string) =>
     request<{ message: string }>("/api/v1/auth/password/reset", {
       method: "POST",

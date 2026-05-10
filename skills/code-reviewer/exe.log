@@ -42,3 +42,24 @@ Findings:
 Summary:
 - Login submissions and mutating authenticated API requests are checked before controller execution, and duplicate submissions within 500ms are rejected with 409.
 - No blocking defect was found in the local-path implementation.
+
+Review: User reference-answer setting
+Commit scope:
+- src/main/java/com/inote/controller/AuthController.java
+- src/main/java/com/inote/model/dto/UserSettingsRequest.java
+- src/main/java/com/inote/model/dto/UserSettingsResponse.java
+- src/main/java/com/inote/model/entity/User.java
+- src/main/java/com/inote/service/UserSettingsService.java
+- src/main/java/com/inote/service/ChatService.java
+- web/src/App.tsx
+- web/src/api.ts
+- web/src/components/ChatWorkspace.tsx
+- web/src/styles.css
+- web/src/types.ts
+
+Findings:
+- None.
+
+Summary:
+- Reviewed the per-user settings API, entity defaulting, chat fallback branch, frontend API/type contract, optimistic toggle state, and switch styling.
+- Backend compile and frontend build had already passed; commit may proceed.

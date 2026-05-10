@@ -61,6 +61,11 @@ public class User {
     private String authToken;
 
     // 定义当前属性与数据库列的映射关系。
+    @Column(name = "answer_from_references_only")
+    // 声明是否仅根据参考文档回答变量，供后续流程使用。
+    private Boolean answerFromReferencesOnly;
+
+    // 定义当前属性与数据库列的映射关系。
     @Column(nullable = false)
     // 声明createdat变量，供后续流程使用。
     private LocalDateTime createdAt;
@@ -87,6 +92,11 @@ public class User {
         createdAt = now;
         // 计算并保存updatedat结果。
         updatedAt = now;
+        // 根据条件判断当前分支是否执行。
+        if (answerFromReferencesOnly == null) {
+            // 默认保持原有的仅根据文档回答行为。
+            answerFromReferencesOnly = Boolean.TRUE;
+        }
     }
 
     /**

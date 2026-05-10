@@ -5,8 +5,11 @@ import com.inote.model.dto.AuthCaptchaResponse;
 import com.inote.model.dto.AuthLoginRequest;
 import com.inote.model.dto.AuthResponse;
 import com.inote.model.dto.ResetPasswordRequest;
+import com.inote.model.dto.UserSettingsRequest;
+import com.inote.model.dto.UserSettingsResponse;
 import com.inote.security.ClientIpResolver;
 import com.inote.service.AuthService;
+import com.inote.service.UserSettingsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,8 @@ public class AuthController {
 
     // 声明认证service变量，供后续流程使用。
     private final AuthService authService;
+    // 声明用户设置service变量，供后续流程使用。
+    private final UserSettingsService userSettingsService;
 
     /**
      * 返回登录前使用的验证码信息。
@@ -77,6 +82,16 @@ public class AuthController {
         authService.resetPassword(request);
         // 返回成功响应。
         return ResponseEntity.ok(Map.of("message", "Password reset successful. Please use the new password next time."));
+    }
+
+    @GetMapping("/settings")
+    public ResponseEntity<UserSettingsResponse> settings() {
+        return ResponseEntity.ok(userSettingsService.currentSettings());
+    }
+
+    @PostMapping("/settings")
+    public ResponseEntity<UserSettingsResponse> updateSettings(@Valid @RequestBody UserSettingsRequest request) {
+        return ResponseEntity.ok(userSettingsService.updateSettings(request));
     }
 
 }

@@ -13,6 +13,10 @@ export interface AuthResponse {
   username: string;
 }
 
+export interface UserSettings {
+  answerFromReferencesOnly: boolean;
+}
+
 export interface InoteResponse {
   sessionId: string | null;
   answer: string;

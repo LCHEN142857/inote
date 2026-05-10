@@ -10,7 +10,8 @@ import type {
   ChatSession,
   ChatSessionSummary,
   DocumentStatus,
-  SourceReference
+  SourceReference,
+  UserSettings
 } from "./types";
 import {
   ACTIVE_DOCUMENT_STATUSES,
@@ -51,6 +52,8 @@ export default function App() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const [userSettings, setUserSettings] = useState<UserSettings>({ answerFromReferencesOnly: true });
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -161,9 +164,14 @@ export default function App() {
     setLoading(true);
     setError("");
     try {
-      const [sessionList, documentList] = await Promise.all([api.listSessions(), api.listDocuments()]);
+      const [sessionList, documentList, settings] = await Promise.all([
+        api.listSessions(),
+        api.listDocuments(),
+        api.getSettings()
+      ]);
       setSessions(sessionList);
       setDocuments(documentList);
+      setUserSettings(settings);
 
       const firstSessionId = sessionList[0]?.id ?? "";
       setSelectedSessionId(firstSessionId);
@@ -223,6 +231,7 @@ export default function App() {
     setComposer("");
     setError("");
     setPasswordDialogOpen(false);
+    setUserSettings({ answerFromReferencesOnly: true });
     setLoginLockUntil(0);
     setLoginLockRemaining(0);
     void refreshCaptcha();
@@ -396,6 +405,23 @@ export default function App() {
     }
   }
 
+  async function handleReferenceModeChange(answerFromReferencesOnly: boolean) {
+    if (settingsSaving) return;
+
+    const previous = userSettings;
+    setSettingsSaving(true);
+    setError("");
+    setUserSettings({ answerFromReferencesOnly });
+    try {
+      setUserSettings(await api.updateSettings(answerFromReferencesOnly));
+    } catch (settingsError) {
+      setUserSettings(previous);
+      setError(settingsError instanceof Error ? settingsError.message : "保存回答设置失败");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
   function togglePinSession(sessionId: string) {
     setPinnedSessionIds((current) =>
       current.includes(sessionId) ? current.filter((item) => item !== sessionId) : [sessionId, ...current]
@@ -457,6 +483,8 @@ export default function App() {
         composer={composer}
         passwordDialogOpen={passwordDialogOpen}
         passwordSubmitting={passwordSubmitting}
+        userSettings={userSettings}
+        settingsSaving={settingsSaving}
         newPassword={newPassword}
         confirmPassword={confirmPassword}
         messageEndRef={messageEndRef}
@@ -464,6 +492,7 @@ export default function App() {
         onOpenPasswordDialog={() => setPasswordDialogOpen(true)}
         onClosePasswordDialog={() => setPasswordDialogOpen(false)}
         onLogout={handleLogout}
+        onReferenceModeChange={(value) => void handleReferenceModeChange(value)}
         onComposerChange={setComposer}
         onSend={(prompt) => void handleSend(prompt)}
         onNewPasswordChange={setNewPassword}
