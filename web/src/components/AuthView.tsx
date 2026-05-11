@@ -94,9 +94,6 @@ export function AuthView(props: AuthViewProps) {
                 ? "提交中"
                 : "登录 / 注册"}
           </button>
-          <button className="auth-forgot-button text-button" type="button">
-            忘记密码
-          </button>
         </form>
       </div>
     </div>

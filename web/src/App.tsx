@@ -453,6 +453,10 @@ export default function App() {
         selectedSessionId={selectedSessionId}
         renamingId={renamingId}
         renameDraft={renameDraft}
+        passwordDialogOpen={passwordDialogOpen}
+        passwordSubmitting={passwordSubmitting}
+        newPassword={newPassword}
+        confirmPassword={confirmPassword}
         onSessionQueryChange={setSessionQuery}
         onRenameDraftChange={setRenameDraft}
         onSelectSession={(sessionId) => void handleSelectSession(sessionId)}
@@ -468,6 +472,12 @@ export default function App() {
         }}
         onSubmitRename={(sessionId) => void handleRenameSubmit(sessionId)}
         onDeleteSession={(sessionId) => void handleDeleteSession(sessionId)}
+        onOpenPasswordDialog={() => setPasswordDialogOpen(true)}
+        onClosePasswordDialog={() => setPasswordDialogOpen(false)}
+        onLogout={handleLogout}
+        onNewPasswordChange={setNewPassword}
+        onConfirmPasswordChange={setConfirmPassword}
+        onResetPassword={() => void handleResetPassword()}
       />
 
       <ChatWorkspace
@@ -481,23 +491,13 @@ export default function App() {
         error={error}
         messages={messages}
         composer={composer}
-        passwordDialogOpen={passwordDialogOpen}
-        passwordSubmitting={passwordSubmitting}
         userSettings={userSettings}
         settingsSaving={settingsSaving}
-        newPassword={newPassword}
-        confirmPassword={confirmPassword}
         messageEndRef={messageEndRef}
         onToggleSidebar={() => setSidebarOpen((value) => !value)}
-        onOpenPasswordDialog={() => setPasswordDialogOpen(true)}
-        onClosePasswordDialog={() => setPasswordDialogOpen(false)}
-        onLogout={handleLogout}
         onReferenceModeChange={(value) => void handleReferenceModeChange(value)}
         onComposerChange={setComposer}
         onSend={(prompt) => void handleSend(prompt)}
-        onNewPasswordChange={setNewPassword}
-        onConfirmPasswordChange={setConfirmPassword}
-        onResetPassword={() => void handleResetPassword()}
       />
 
       <KnowledgePanel

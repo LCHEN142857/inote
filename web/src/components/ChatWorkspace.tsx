@@ -13,23 +13,13 @@ type ChatWorkspaceProps = {
   error: string;
   messages: LocalChatMessage[];
   composer: string;
-  passwordDialogOpen: boolean;
-  passwordSubmitting: boolean;
   userSettings: UserSettings;
   settingsSaving: boolean;
-  newPassword: string;
-  confirmPassword: string;
   messageEndRef: RefObject<HTMLDivElement>;
   onToggleSidebar: () => void;
-  onOpenPasswordDialog: () => void;
-  onClosePasswordDialog: () => void;
-  onLogout: () => void;
   onReferenceModeChange: (value: boolean) => void;
   onComposerChange: (value: string) => void;
   onSend: (prompt?: string) => void;
-  onNewPasswordChange: (value: string) => void;
-  onConfirmPasswordChange: (value: string) => void;
-  onResetPassword: () => void;
 };
 
 function MessageSources(props: { sources: SourceReference[] }) {
@@ -59,44 +49,10 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
           <span>{props.completedDocuments} 已入库</span>
           <span>{props.sessionsCount} 会话</span>
           {props.activeDocuments ? <span>{props.activeDocuments} 文档处理中</span> : null}
-          <button className="text-button" onClick={props.onOpenPasswordDialog}>
-            忘记密码
-          </button>
-          <button className="text-button" onClick={props.onLogout}>
-            退出登录
-          </button>
         </div>
       </div>
 
       {props.error ? <div className="error-banner">{props.error}</div> : null}
-
-      {props.passwordDialogOpen ? (
-        <section className="password-card">
-          <div className="panel-header">
-            <span>重置密码</span>
-            <button className="text-button" onClick={props.onClosePasswordDialog}>
-              关闭
-            </button>
-          </div>
-          <div className="password-grid">
-            <input
-              type="password"
-              value={props.newPassword}
-              onChange={(event) => props.onNewPasswordChange(event.target.value)}
-              placeholder="输入新密码"
-            />
-            <input
-              type="password"
-              value={props.confirmPassword}
-              onChange={(event) => props.onConfirmPasswordChange(event.target.value)}
-              placeholder="确认新密码"
-            />
-            <button className="primary-button" onClick={props.onResetPassword} disabled={props.passwordSubmitting}>
-              {props.passwordSubmitting ? "提交中" : "提交"}
-            </button>
-          </div>
-        </section>
-      ) : null}
 
       <section className="chat-panel">
         {props.loading ? (
