@@ -1,6 +1,7 @@
 import type {
   AuthCaptcha,
   AuthResponse,
+  ChatModelCatalog,
   ChatSession,
   ChatSessionSummary,
   DocumentStatus,
@@ -82,6 +83,7 @@ export const api = {
     }),
   me: () => request<AuthResponse>("/api/v1/auth/me"),
   getSettings: () => request<UserSettings>("/api/v1/auth/settings"),
+  getChatModels: () => request<ChatModelCatalog>("/api/v1/chat/models"),
   updateSettings: (answerFromReferencesOnly: boolean) =>
     request<UserSettings>("/api/v1/auth/settings", {
       method: "POST",
@@ -108,10 +110,10 @@ export const api = {
     request<void>(`/api/v1/chat/sessions/${sessionId}`, {
       method: "DELETE"
     }),
-  query: (sessionId: string | undefined, question: string) =>
+  query: (sessionId: string | undefined, question: string, model: string) =>
     request<InoteResponse>("/api/v1/chat/query", {
       method: "POST",
-      body: JSON.stringify({ sessionId, question })
+      body: JSON.stringify({ sessionId, question, model })
     }),
   listDocuments: () => request<DocumentStatus[]>("/api/v1/documents"),
   uploadDocument: async (file: File): Promise<DocumentUploadResponse> => {

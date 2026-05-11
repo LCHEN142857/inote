@@ -1,10 +1,18 @@
 import type { RefObject } from "react";
-import type { AuthResponse, ChatSession, LocalChatMessage, SourceReference, UserSettings } from "../types";
-import { formatTime, QUICK_PROMPTS } from "../utils";
+import type {
+  AuthResponse,
+  ChatSession,
+  LocalChatMessage,
+  SourceReference,
+  UserSettings
+} from "../types";
+import { formatTime } from "../utils";
 
 type ChatWorkspaceProps = {
   authUser: AuthResponse;
   selectedSession: ChatSession | null;
+  availableModels: string[];
+  selectedModel: string;
   sessionsCount: number;
   completedDocuments: number;
   activeDocuments: number;
@@ -17,6 +25,7 @@ type ChatWorkspaceProps = {
   settingsSaving: boolean;
   messageEndRef: RefObject<HTMLDivElement>;
   onToggleSidebar: () => void;
+  onModelChange: (value: string) => void;
   onReferenceModeChange: (value: boolean) => void;
   onComposerChange: (value: string) => void;
   onSend: (prompt?: string) => void;
@@ -64,13 +73,6 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               <h3>把文档、知识与问答放进同一个工作台</h3>
               <p>已登录用户只能查看自己的文档和会话。上传文件后，直接围绕资料提问，回答会附带来源引用。</p>
             </div>
-            <div className="prompt-grid">
-              {QUICK_PROMPTS.map((prompt) => (
-                <button key={prompt} className="prompt-card" onClick={() => props.onSend(prompt)}>
-                  {prompt}
-                </button>
-              ))}
-            </div>
           </div>
         ) : (
           <div className="message-stream">
@@ -102,18 +104,33 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               props.onSend();
             }
           }}
-          placeholder="输入你的问题，例如：这批文档里有哪些关键风险与行动项？"
+          placeholder="输入你的问题"
           rows={1}
         />
-        <label className="reference-switch reference-switch-inline">
-          <input
-            type="checkbox"
-            checked={props.userSettings.answerFromReferencesOnly}
-            disabled={props.settingsSaving}
-            onChange={(event) => props.onReferenceModeChange(event.target.checked)}
-          />
-          <span className="switch-label">仅根据参考文档回答</span>
-        </label>
+        <div className="composer-tools">
+          <select
+            className="model-select"
+            value={props.selectedModel}
+            disabled={!props.availableModels.length || props.sending}
+            onChange={(event) => props.onModelChange(event.target.value)}
+            aria-label="切换模型"
+          >
+            {props.availableModels.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
+          </select>
+          <label className="reference-switch reference-switch-inline">
+            <input
+              type="checkbox"
+              checked={props.userSettings.answerFromReferencesOnly}
+              disabled={props.settingsSaving}
+              onChange={(event) => props.onReferenceModeChange(event.target.checked)}
+            />
+            <span className="switch-label">仅根据参考文档回答</span>
+          </label>
+        </div>
         <div className="composer-actions">
           <span>Enter 发送，Shift + Enter 换行</span>
           <button className="primary-button" onClick={() => props.onSend()} disabled={props.sending}>

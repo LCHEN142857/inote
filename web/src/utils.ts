@@ -1,12 +1,5 @@
 import type { ChatSession, LocalChatMessage, SourceReference } from "./types";
 
-export const QUICK_PROMPTS = [
-  "总结已上传文档中的核心观点",
-  "对比不同文档里的关键结论",
-  "基于资料生成一份项目周报",
-  "提取文档中的时间线和责任人"
-];
-
 export const PINNED_SESSIONS_KEY = "inote-pinned-sessions";
 export const ACTIVE_DOCUMENT_STATUSES = new Set(["PENDING", "PARSING", "PROCESSING"]);
 

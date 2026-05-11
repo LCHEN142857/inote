@@ -20,6 +20,8 @@ import {
   getStoredPinnedSessions
 } from "./utils";
 
+const CHAT_MODEL_STORAGE_KEY = "inote-chat-model";
+
 export default function App() {
   const [authUser, setAuthUser] = useState<AuthResponse | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -34,6 +36,10 @@ export default function App() {
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null);
   const [composer, setComposer] = useState("");
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState(
+    () => window.localStorage.getItem(CHAT_MODEL_STORAGE_KEY) ?? ""
+  );
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -164,14 +170,25 @@ export default function App() {
     setLoading(true);
     setError("");
     try {
-      const [sessionList, documentList, settings] = await Promise.all([
+      const [sessionList, documentList, settings, modelCatalog] = await Promise.all([
         api.listSessions(),
         api.listDocuments(),
-        api.getSettings()
+        api.getSettings(),
+        api.getChatModels()
       ]);
+
       setSessions(sessionList);
       setDocuments(documentList);
       setUserSettings(settings);
+      setAvailableModels(modelCatalog.availableModels);
+
+      const storedModel = window.localStorage.getItem(CHAT_MODEL_STORAGE_KEY) ?? "";
+      const nextModel =
+        storedModel && modelCatalog.availableModels.includes(storedModel)
+          ? storedModel
+          : modelCatalog.defaultModel;
+      setSelectedModel(nextModel);
+      window.localStorage.setItem(CHAT_MODEL_STORAGE_KEY, nextModel);
 
       const firstSessionId = sessionList[0]?.id ?? "";
       setSelectedSessionId(firstSessionId);
@@ -209,7 +226,11 @@ export default function App() {
       if (loginError instanceof ApiError && loginError.status === 423) {
         const lockedUntil = Number(loginError.details.lockedUntilEpochMillis);
         const remaining = Number(loginError.details.lockSeconds) || 60;
-        setLoginLockUntil(Number.isFinite(lockedUntil) && lockedUntil > Date.now() ? lockedUntil : Date.now() + remaining * 1000);
+        setLoginLockUntil(
+          Number.isFinite(lockedUntil) && lockedUntil > Date.now()
+            ? lockedUntil
+            : Date.now() + remaining * 1000
+        );
         setAuthError(loginError.message);
       } else {
         setAuthError(loginError instanceof Error ? loginError.message : "登录失败");
@@ -232,6 +253,7 @@ export default function App() {
     setError("");
     setPasswordDialogOpen(false);
     setUserSettings({ answerFromReferencesOnly: true });
+    setAvailableModels([]);
     setLoginLockUntil(0);
     setLoginLockRemaining(0);
     void refreshCaptcha();
@@ -324,7 +346,7 @@ export default function App() {
       setSelectedSession(optimisticSession);
       setComposer("");
 
-      const response = await api.query(ensuredSessionId, question);
+      const response = await api.query(ensuredSessionId, question, selectedModel);
       const responseSessionId = response.sessionId ?? ensuredSessionId;
       setSelectedSessionId(responseSessionId);
       setLatestAnswerMeta({
@@ -340,12 +362,13 @@ export default function App() {
           ...optimisticSession,
           messages: optimisticSession.messages.map((message) =>
             message.id === optimisticAssistantMessageId
-              ? { ...message, content: "服务开小差了，请稍后重试" }
+              ? { ...message, content: "服务暂时不可用，请稍后重试" }
               : message
           )
         });
         return;
       }
+
       setError(queryError instanceof Error ? queryError.message : "发送失败");
       if (selectedSessionId) {
         try {
@@ -441,6 +464,11 @@ export default function App() {
     }
   }
 
+  function handleModelChange(model: string) {
+    setSelectedModel(model);
+    window.localStorage.setItem(CHAT_MODEL_STORAGE_KEY, model);
+  }
+
   function togglePinSession(sessionId: string) {
     setPinnedSessionIds((current) =>
       current.includes(sessionId) ? current.filter((item) => item !== sessionId) : [sessionId, ...current]
@@ -502,6 +530,8 @@ export default function App() {
       <ChatWorkspace
         authUser={authUser}
         selectedSession={selectedSession}
+        availableModels={availableModels}
+        selectedModel={selectedModel}
         sessionsCount={sessions.length}
         completedDocuments={completedDocuments}
         activeDocuments={activeDocuments}
@@ -514,6 +544,7 @@ export default function App() {
         settingsSaving={settingsSaving}
         messageEndRef={messageEndRef}
         onToggleSidebar={() => setSidebarOpen((value) => !value)}
+        onModelChange={handleModelChange}
         onReferenceModeChange={(value) => void handleReferenceModeChange(value)}
         onComposerChange={setComposer}
         onSend={(prompt) => void handleSend(prompt)}

@@ -17,6 +17,11 @@ export interface UserSettings {
   answerFromReferencesOnly: boolean;
 }
 
+export interface ChatModelCatalog {
+  defaultModel: string;
+  availableModels: string[];
+}
+
 export interface InoteResponse {
   sessionId: string | null;
   answer: string;

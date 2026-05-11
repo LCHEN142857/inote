@@ -34,7 +34,7 @@ spring:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
       chat:
         options:
-          model: qwen3-max
+          model: ${app.chat.default-model:qwen3.5-plus-2026-02-15}
           temperature: 0.7
           max-tokens: 2000
       embedding:
@@ -71,6 +71,34 @@ rag:
   rerank-model: gte-rerank
   rerank-top-n: 3
   final-top-k: 3
+
+app:
+  chat:
+    default-model: qwen3.5-plus-2026-02-15
+    available-models:
+      - qwen3.5-plus-2026-02-15
+      - glm-5
+      - qwen3.5-397b-a17b
+      - qwen3.5-122b-a10b
+      - qwen3.5-flash
+      - qwen3.5-35b-a3b
+      - qwen3.5-27b
+      - qwen3.5-flash-2026-02-23
+      - MiniMax-M2.5
+      - qwen-flash-character-2026-02-26
+      - gui-plus-2026-02-26
+      - qwen3.6-plus-2026-04-02
+      - qwen3.6-plus
+      - glm-5.1
+      - qwen3.6-flash-2026-04-16
+      - qwen3.6-35b-a3b
+      - qwen3.6-flash
+      - qwen3.6-max-preview
+      - kimi-k2.6
+      - qwen3.5-plus-2026-04-20
+      - qwen3.6-27b
+      - deepseek-v4-flash
+      - deepseek-v4-pro
 
 file:
   upload:

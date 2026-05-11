@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Primary;
 // 声明当前类提供 Spring 配置。
 @Configuration
 // 应用 `EnableConfigurationProperties` 注解声明当前行为。
-@EnableConfigurationProperties(RagProperties.class)
+@EnableConfigurationProperties({RagProperties.class, ChatModelProperties.class})
 // 定义 AI 相关配置，负责组装聊天模型和兜底模型。
 public class AiConfig {
 
