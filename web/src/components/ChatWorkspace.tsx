@@ -59,18 +59,6 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
           <span>{props.completedDocuments} 已入库</span>
           <span>{props.sessionsCount} 会话</span>
           {props.activeDocuments ? <span>{props.activeDocuments} 文档处理中</span> : null}
-          <label className="reference-switch">
-            <input
-              type="checkbox"
-              checked={props.userSettings.answerFromReferencesOnly}
-              disabled={props.settingsSaving}
-              onChange={(event) => props.onReferenceModeChange(event.target.checked)}
-            />
-            <span className="switch-track" aria-hidden="true">
-              <span className="switch-thumb" />
-            </span>
-            <span className="switch-label">请根据参考文档来回答</span>
-          </label>
           <button className="text-button" onClick={props.onOpenPasswordDialog}>
             忘记密码
           </button>
@@ -103,11 +91,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
               onChange={(event) => props.onConfirmPasswordChange(event.target.value)}
               placeholder="确认新密码"
             />
-            <button
-              className="primary-button"
-              onClick={props.onResetPassword}
-              disabled={props.passwordSubmitting}
-            >
+            <button className="primary-button" onClick={props.onResetPassword} disabled={props.passwordSubmitting}>
               {props.passwordSubmitting ? "提交中" : "提交"}
             </button>
           </div>
@@ -165,6 +149,18 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
           placeholder="输入你的问题，例如：这批文档里有哪些关键风险与行动项？"
           rows={1}
         />
+        <label className="reference-switch reference-switch-inline">
+          <input
+            type="checkbox"
+            checked={props.userSettings.answerFromReferencesOnly}
+            disabled={props.settingsSaving}
+            onChange={(event) => props.onReferenceModeChange(event.target.checked)}
+          />
+          <span className="switch-track" aria-hidden="true">
+            <span className="switch-thumb" />
+          </span>
+          <span className="switch-label">仅根据参考文档回答</span>
+        </label>
         <div className="composer-actions">
           <span>Enter 发送，Shift + Enter 换行</span>
           <button className="primary-button" onClick={() => props.onSend()} disabled={props.sending}>
