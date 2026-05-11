@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// 验证认证控制器在不同输入和异常条件下的 HTTP 行为。
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerTest {
@@ -44,6 +45,7 @@ class AuthControllerTest {
     @MockBean
     private UserRepository userRepository;
 
+    // 验证验证码接口返回完整的验证码载荷。
     @Test
     void captchaReturnsCaptchaPayload() throws Exception {
         when(authService.generateCaptcha()).thenReturn(AuthCaptchaResponse.builder()
@@ -57,6 +59,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.captchaImage").value("data:image/png;base64,ZmFrZS1pbWFnZQ=="));
     }
 
+    // 验证登录接口在请求合法时返回认证结果。
     @Test
     void loginReturnsAuthResponseWhenRequestIsValid() throws Exception {
         when(authService.loginOrRegister(any(AuthLoginRequest.class), anyString())).thenReturn(AuthResponse.builder()
@@ -76,6 +79,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.username").value("tester"));
     }
 
+    // 验证登录接口会把表单校验错误返回给前端。
     @Test
     void loginReturnsBadRequestWhenValidationFails() throws Exception {
         mockMvc.perform(post("/api/v1/auth/login")
@@ -89,6 +93,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.username").value("username must not be blank"));
     }
 
+    // 验证认证服务拒绝凭据时接口返回 401。
     @Test
     void loginReturnsUnauthorizedWhenServiceRejectsCredentials() throws Exception {
         when(authService.loginOrRegister(any(AuthLoginRequest.class), anyString()))
@@ -105,6 +110,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.error").value("Username or password is incorrect."));
     }
 
+    // 验证当前用户接口返回登录态信息。
     @Test
     void meReturnsCurrentUser() throws Exception {
         when(authService.currentUser()).thenReturn(AuthResponse.builder()
@@ -118,6 +124,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.username").value("current-user"));
     }
 
+    // 验证没有登录态时当前用户接口返回 401。
     @Test
     void meReturnsUnauthorizedWhenNoCurrentUserExists() throws Exception {
         when(authService.currentUser()).thenThrow(new UnauthorizedException("Authentication required."));
@@ -127,6 +134,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.error").value("Authentication required."));
     }
 
+    // 验证重置密码接口在请求合法时返回成功消息。
     @Test
     void resetPasswordReturnsSuccessMessageWhenRequestIsValid() throws Exception {
         doNothing().when(authService).resetPassword(any(ResetPasswordRequest.class));
@@ -140,6 +148,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Password reset successful. Please use the new password next time."));
     }
 
+    // 验证重置密码接口会返回表单校验错误。
     @Test
     void resetPasswordReturnsBadRequestWhenValidationFails() throws Exception {
         mockMvc.perform(post("/api/v1/auth/password/reset")
@@ -151,6 +160,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.newPassword").value("newPassword must not be blank"));
     }
 
+    // 验证服务层拒绝重置请求时返回业务错误。
     @Test
     void resetPasswordReturnsBadRequestWhenServiceRejectsRequest() throws Exception {
         doThrow(new IllegalArgumentException("The two password entries do not match."))

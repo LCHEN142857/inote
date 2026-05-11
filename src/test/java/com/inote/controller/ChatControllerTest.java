@@ -38,6 +38,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// 验证聊天控制器的会话和问答接口在正常与异常条件下的行为。
 @WebMvcTest(ChatController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class ChatControllerTest {
@@ -57,6 +58,7 @@ class ChatControllerTest {
     @MockBean
     private UserRepository userRepository;
 
+    // 验证提问接口会返回答案和引用来源。
     @Test
     void queryReturnsAnswerWhenRequestIsValid() throws Exception {
         when(chatService.query(any(ChatRequest.class))).thenReturn(InoteResponse.builder()
@@ -76,6 +78,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.sources[0].fileName").value("doc.txt"));
     }
 
+    // 验证问题为空时会被请求校验拦截。
     @Test
     void queryReturnsBadRequestWhenQuestionIsBlank() throws Exception {
         mockMvc.perform(post("/api/v1/chat/query")
@@ -87,6 +90,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.question").value("question must not be blank"));
     }
 
+    // 验证聊天服务抛出未知异常时控制器会返回通用错误。
     @Test
     void queryReturnsServerErrorWhenServiceThrowsUnexpectedException() throws Exception {
         when(chatService.query(any(ChatRequest.class))).thenThrow(new RuntimeException("boom"));
@@ -100,6 +104,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.error").value("Unexpected server error. Please try again later."));
     }
 
+    // 验证新建会话接口返回创建结果。
     @Test
     void createSessionReturnsCreatedResponse() throws Exception {
         when(chatSessionService.createSession(any(ChatSessionCreateRequest.class)))
@@ -113,6 +118,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.title").value("My Session"));
     }
 
+    // 验证新建会话接口可以接受空请求体。
     @Test
     void createSessionAcceptsNullBody() throws Exception {
         when(chatSessionService.createSession(any())).thenReturn(sessionResponse("session-2", "New Session"));
@@ -123,6 +129,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.title").value("New Session"));
     }
 
+    // 验证未认证时创建会话会返回 401。
     @Test
     void createSessionReturnsUnauthorizedWhenServiceRejectsUser() throws Exception {
         when(chatSessionService.createSession(any(ChatSessionCreateRequest.class)))
@@ -135,6 +142,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.error").value("Authentication required."));
     }
 
+    // 验证会话列表接口返回所有会话摘要。
     @Test
     void listSessionsReturnsAllSessions() throws Exception {
         when(chatSessionService.listSessions()).thenReturn(List.of(
@@ -152,6 +160,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$[0].messageCount").value(2));
     }
 
+    // 验证未认证时会话列表接口返回 401。
     @Test
     void listSessionsReturnsUnauthorizedWhenNoCurrentUserExists() throws Exception {
         when(chatSessionService.listSessions()).thenThrow(new UnauthorizedException("Authentication required."));
@@ -161,6 +170,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.error").value("Authentication required."));
     }
 
+    // 验证未处理异常会被统一映射为 500。
     @Test
     void listSessionsReturnsServerErrorWhenUnexpectedFailureHappens() throws Exception {
         when(chatSessionService.listSessions()).thenThrow(new RuntimeException("boom"));
@@ -170,6 +180,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.error").value("Unexpected server error. Please try again later."));
     }
 
+    // 验证会话详情接口返回消息列表。
     @Test
     void getSessionReturnsSessionDetails() throws Exception {
         when(chatSessionService.getSession("session-1")).thenReturn(sessionResponse("session-1", "Detail"));
@@ -180,6 +191,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.messages[0].role").value("user"));
     }
 
+    // 验证不存在的会话会返回 404。
     @Test
     void getSessionReturnsNotFoundWhenSessionDoesNotExist() throws Exception {
         when(chatSessionService.getSession("missing"))
@@ -190,6 +202,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.error").value("Session not found: missing"));
     }
 
+    // 验证会话详情接口的未知失败会返回 500。
     @Test
     void getSessionReturnsServerErrorWhenUnexpectedFailureHappens() throws Exception {
         when(chatSessionService.getSession("session-1")).thenThrow(new RuntimeException("boom"));
@@ -199,6 +212,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.error").value("Unexpected server error. Please try again later."));
     }
 
+    // 验证更新会话接口返回更新后的标题。
     @Test
     void updateSessionReturnsUpdatedSession() throws Exception {
         when(chatSessionService.updateSession(eq("session-1"), any(ChatSessionUpdateRequest.class)))
@@ -211,6 +225,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.title").value("Updated"));
     }
 
+    // 验证空标题会触发请求校验失败。
     @Test
     void updateSessionReturnsBadRequestWhenTitleIsBlank() throws Exception {
         mockMvc.perform(put("/api/v1/chat/sessions/session-1")
@@ -220,6 +235,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.title").value("title must not be blank"));
     }
 
+    // 验证更新不存在的会话会返回 404。
     @Test
     void updateSessionReturnsNotFoundWhenSessionDoesNotExist() throws Exception {
         when(chatSessionService.updateSession(eq("missing"), any(ChatSessionUpdateRequest.class)))
@@ -232,6 +248,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.error").value("Session not found: missing"));
     }
 
+    // 验证删除会话接口返回 204。
     @Test
     void deleteSessionReturnsNoContent() throws Exception {
         doNothing().when(chatSessionService).deleteSession("session-1");
@@ -240,6 +257,7 @@ class ChatControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    // 验证删除不存在的会话会返回 404。
     @Test
     void deleteSessionReturnsNotFoundWhenSessionDoesNotExist() throws Exception {
         doThrow(new EntityNotFoundException("Session not found: missing"))
@@ -250,6 +268,7 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.error").value("Session not found: missing"));
     }
 
+    // 验证删除接口的未知失败会返回 500。
     @Test
     void deleteSessionReturnsServerErrorWhenUnexpectedFailureHappens() throws Exception {
         doThrow(new RuntimeException("boom"))

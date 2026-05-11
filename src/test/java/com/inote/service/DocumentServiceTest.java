@@ -33,6 +33,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+// 验证文档服务在上传、查询和错误处理上的核心业务规则。
 @ExtendWith(MockitoExtension.class)
 class DocumentServiceTest {
 
@@ -50,12 +51,14 @@ class DocumentServiceTest {
 
     private User currentUser;
 
+    // 准备当前用户和测试上传目录。
     @BeforeEach
     void setUp() {
         currentUser = TestDataFactory.user("user-1", "tester", "token-1");
         ReflectionTestUtils.setField(documentService, "uploadPath", "./target/test-uploads");
     }
 
+    // 验证上传文档会持久化记录并触发异步解析。
     @Test
     void uploadDocumentPersistsDocumentAndTriggersAsyncProcessing() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "sample.txt", "text/plain", "hello world".getBytes());
@@ -80,6 +83,7 @@ class DocumentServiceTest {
         assertThat(captor.getAllValues().get(1).getFileUrl()).isEqualTo("/api/v1/documents/files/doc-1");
     }
 
+    // 验证不支持的扩展名会被拒绝。
     @Test
     void uploadDocumentRejectsUnsupportedExtension() {
         MockMultipartFile file = new MockMultipartFile("file", "sample.exe", "application/octet-stream", "hello".getBytes());
@@ -91,6 +95,7 @@ class DocumentServiceTest {
         verify(documentRepository, never()).save(any(Document.class));
     }
 
+    // 验证旧式 doc 文件也会被拒绝。
     @Test
     void uploadDocumentRejectsLegacyDocFiles() {
         MockMultipartFile file = new MockMultipartFile("file", "sample.doc", "application/msword", "hello".getBytes());
@@ -100,6 +105,7 @@ class DocumentServiceTest {
                 .hasMessageContaining("Unsupported file type: doc");
     }
 
+    // 验证查询不存在的文档会抛出未找到异常。
     @Test
     void getDocumentStatusThrowsWhenOwnedDocumentDoesNotExist() {
         when(currentUserService.getCurrentUser()).thenReturn(currentUser);
@@ -110,6 +116,7 @@ class DocumentServiceTest {
                 .hasMessage("Document not found: missing");
     }
 
+    // 验证列表接口会把仓库实体转换成状态响应。
     @Test
     void listDocumentsMapsRepositoryEntitiesToStatusResponses() {
         Document completedDocument = TestDataFactory.document("doc-1", currentUser, "COMPLETED");
@@ -124,6 +131,7 @@ class DocumentServiceTest {
         assertThat(responses.get(0).getStatus()).isEqualTo("COMPLETED");
     }
 
+    // 验证保存文件失败时会包装成文档存储异常。
     @Test
     void uploadDocumentThrowsStorageExceptionWhenSavingFileFails() throws IOException {
         MockMultipartFile file = new MockMultipartFile("file", "sample.txt", "text/plain", "hello".getBytes());

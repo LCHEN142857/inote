@@ -19,21 +19,34 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+// 将验证码字符串渲染成带噪点干扰的 PNG 数据 URI。
 @Component
 public class CaptchaImageRenderer {
 
+    // 验证码图片宽度。
     private static final int WIDTH = 168;
+    // 验证码图片高度。
     private static final int HEIGHT = 56;
+    // 随机选择字体增强视觉扰动。
     private static final Font[] FONTS = new Font[] {
             new Font("SansSerif", Font.BOLD, 34),
             new Font("Dialog", Font.BOLD, 34),
             new Font("Serif", Font.BOLD, 34)
     };
 
+    // 提供安全随机源生成噪点和字符偏移。
     private final SecureRandom secureRandom = new SecureRandom();
 
+    /**
+     * 将验证码渲染成可直接嵌入前端的 data URI。
+     * @param code 验证码文本。
+     * @return PNG 格式的 data URI。
+     * @throws IllegalStateException 图像编码失败时抛出。
+     */
     public String renderAsDataUri(String code) {
+        // 创建透明背景画布。
         BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        // 取得绘图上下文后按步骤绘制验证码。
         Graphics2D graphics = image.createGraphics();
         try {
             configure(graphics);
@@ -47,6 +60,7 @@ public class CaptchaImageRenderer {
             graphics.dispose();
         }
 
+        // 将渲染结果编码为 base64 data URI。
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             ImageIO.write(image, "png", output);
             return "data:image/png;base64," + Base64.getEncoder().encodeToString(output.toByteArray());
@@ -55,17 +69,29 @@ public class CaptchaImageRenderer {
         }
     }
 
+    /**
+     * 配置图像渲染质量。
+     * @param graphics 绘图上下文。
+     */
     private void configure(Graphics2D graphics) {
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
     }
 
+    /**
+     * 绘制背景渐变。
+     * @param graphics 绘图上下文。
+     */
     private void paintBackground(Graphics2D graphics) {
         graphics.setPaint(new GradientPaint(0, 0, new Color(250, 250, 250), WIDTH, HEIGHT, new Color(236, 239, 244)));
         graphics.fillRect(0, 0, WIDTH, HEIGHT);
     }
 
+    /**
+     * 在背景中填充随机噪点。
+     * @param graphics 绘图上下文。
+     */
     private void paintNoise(Graphics2D graphics) {
         for (int i = 0; i < 180; i++) {
             int size = 1 + secureRandom.nextInt(3);
@@ -77,6 +103,10 @@ public class CaptchaImageRenderer {
         }
     }
 
+    /**
+     * 绘制干扰曲线。
+     * @param graphics 绘图上下文。
+     */
     private void paintGuides(Graphics2D graphics) {
         graphics.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         for (int i = 0; i < 2; i++) {
@@ -95,6 +125,11 @@ public class CaptchaImageRenderer {
         }
     }
 
+    /**
+     * 绘制验证码字符。
+     * @param graphics 绘图上下文。
+     * @param code 验证码文本。
+     */
     private void paintCharacters(Graphics2D graphics, String code) {
         int slotWidth = (WIDTH - 32) / code.length();
         int baseline = 38;
@@ -119,6 +154,13 @@ public class CaptchaImageRenderer {
         }
     }
 
+    /**
+     * 为单个字符区域补充局部噪点。
+     * @param graphics 绘图上下文。
+     * @param x 字符基准横坐标。
+     * @param y 字符基准纵坐标。
+     * @param slotWidth 字符槽宽。
+     */
     private void paintCharacterSpray(Graphics2D graphics, double x, double y, int slotWidth) {
         Graphics2D overlay = (Graphics2D) graphics.create();
         try {
@@ -136,6 +178,11 @@ public class CaptchaImageRenderer {
         }
     }
 
+    /**
+     * 绘制全局喷点噪声。
+     * @param graphics 绘图上下文。
+     * @param code 验证码文本，用于决定噪声强度。
+     */
     private void paintSpray(Graphics2D graphics, String code) {
         Graphics2D overlay = (Graphics2D) graphics.create();
         try {
@@ -152,6 +199,10 @@ public class CaptchaImageRenderer {
         }
     }
 
+    /**
+     * 绘制验证码边框。
+     * @param graphics 绘图上下文。
+     */
     private void paintBorder(Graphics2D graphics) {
         graphics.setColor(new Color(133, 146, 166, 120));
         graphics.drawRoundRect(0, 0, WIDTH - 1, HEIGHT - 1, 12, 12);

@@ -29,6 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+// 验证认证服务在验证码、登录和重置密码场景下的业务行为。
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
@@ -55,6 +56,7 @@ class AuthServiceTest {
         when(captchaImageRenderer.renderAsDataUri(any(String.class))).thenReturn("data:image/png;base64,ZmFrZS1pbWFnZQ==");
     }
 
+    // 验证验证码生成会返回四位代码和图片。
     @Test
     void generateCaptchaProducesFourCharacterCodeAndImage() throws Exception {
         AuthCaptchaResponse response = authService.generateCaptcha();
@@ -64,6 +66,7 @@ class AuthServiceTest {
         assertThat(readCaptchaCode(response.getCaptchaId())).hasSize(4);
     }
 
+    // 验证新用户登录会自动注册并返回认证信息。
     @Test
     void loginOrRegisterRegistersNewUserWhenUsernameDoesNotExist() throws Exception {
         AuthCaptchaResponse captcha = authService.generateCaptcha();
@@ -89,6 +92,7 @@ class AuthServiceTest {
         assertThat(savedUserCaptor.getValue().getAuthToken()).isEqualTo(response.getToken());
     }
 
+    // 验证密码不匹配时登录会被拒绝。
     @Test
     void loginOrRegisterThrowsUnauthorizedWhenPasswordDoesNotMatch() throws Exception {
         AuthCaptchaResponse captcha = authService.generateCaptcha();
@@ -111,6 +115,7 @@ class AuthServiceTest {
         verify(userRepository, never()).save(any(User.class));
     }
 
+    // 验证两次输入的密码不一致时重置请求会失败。
     @Test
     void resetPasswordRejectsMismatchedConfirmation() {
         ResetPasswordRequest request = ResetPasswordRequest.builder()
@@ -123,6 +128,7 @@ class AuthServiceTest {
                 .hasMessage("The two password entries do not match.");
     }
 
+    // 验证重置密码会更新密码哈希并轮换令牌。
     @Test
     void resetPasswordUpdatesPasswordHashAndToken() {
         User currentUser = TestDataFactory.user("user-1", "tester", "old-token");
