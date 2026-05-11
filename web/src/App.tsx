@@ -290,6 +290,8 @@ export default function App() {
 
     setSending(true);
     setError("");
+    let optimisticSession: ChatSession | null = null;
+    let optimisticAssistantMessageId = "";
 
     try {
       const now = new Date().toISOString();
@@ -302,19 +304,24 @@ export default function App() {
         messages: []
       };
 
-      setSelectedSession({
+      const messageSuffix = Date.now();
+      optimisticAssistantMessageId = `a-${messageSuffix}`;
+      optimisticSession = {
         ...baseSession,
         messages: [
           ...baseSession.messages,
-          { id: `u-${Date.now()}`, role: "user", content: question, createdAt: now },
+          { id: `u-${messageSuffix}`, role: "user", content: question, createdAt: now },
           {
-            id: `a-${Date.now()}`,
+            id: optimisticAssistantMessageId,
             role: "assistant",
-            content: "正在检索你的知识文档并生成回答...",
+            content: "generating...",
             createdAt: now
           }
         ]
-      });
+      };
+
+      setSelectedSessionId(ensuredSessionId);
+      setSelectedSession(optimisticSession);
       setComposer("");
 
       const response = await api.query(ensuredSessionId, question);
@@ -327,6 +334,18 @@ export default function App() {
       });
       await refreshSessions(responseSessionId);
     } catch (queryError) {
+      if (queryError instanceof ApiError && queryError.status >= 500 && optimisticSession) {
+        setError("");
+        setSelectedSession({
+          ...optimisticSession,
+          messages: optimisticSession.messages.map((message) =>
+            message.id === optimisticAssistantMessageId
+              ? { ...message, content: "服务开小差了，请稍后重试" }
+              : message
+          )
+        });
+        return;
+      }
       setError(queryError instanceof Error ? queryError.message : "发送失败");
       if (selectedSessionId) {
         try {
