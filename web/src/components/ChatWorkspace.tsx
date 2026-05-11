@@ -112,9 +112,6 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
             disabled={props.settingsSaving}
             onChange={(event) => props.onReferenceModeChange(event.target.checked)}
           />
-          <span className="switch-track" aria-hidden="true">
-            <span className="switch-thumb" />
-          </span>
           <span className="switch-label">仅根据参考文档回答</span>
         </label>
         <div className="composer-actions">

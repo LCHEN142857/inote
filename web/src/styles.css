@@ -504,21 +504,23 @@ a {
 
 .reference-switch {
   display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 37px;
-  padding: 7px 12px;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
   border-radius: 999px;
-  background: rgba(247, 247, 248, 0.96);
-  color: var(--text-soft);
-  font-size: 13px;
+  background: transparent;
   cursor: pointer;
   user-select: none;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
 }
 
 .reference-switch-inline {
   margin-top: 12px;
   width: fit-content;
+  border: 1px solid var(--line-soft);
 }
 
 .reference-switch input {
@@ -527,39 +529,35 @@ a {
   pointer-events: none;
 }
 
-.switch-track {
-  position: relative;
-  width: 36px;
-  height: 20px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: #d7dce2;
-  transition: background-color 180ms ease;
+.reference-switch input:checked + .switch-label {
+  background: #111111;
+  color: #ffffff;
 }
 
-.switch-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
-  transition: transform 180ms ease;
-}
-
-.reference-switch input:checked + .switch-track {
-  background: var(--accent);
-}
-
-.reference-switch input:checked + .switch-track .switch-thumb {
-  transform: translateX(16px);
-}
-
-.reference-switch input:disabled ~ .switch-label,
-.reference-switch input:disabled + .switch-track {
+.reference-switch input:disabled + .switch-label {
   opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.reference-switch .switch-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 9px 14px;
+  border-radius: inherit;
+  background: rgba(247, 247, 248, 0.96);
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.reference-switch input:disabled + .switch-label {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .chat-panel {
