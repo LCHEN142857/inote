@@ -35,6 +35,12 @@ const documentStatusTitleStyle: CSSProperties = {
   fontWeight: 650
 };
 
+const documentStatusHeadingStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8
+};
+
 const documentStatusActionsStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
@@ -127,8 +133,8 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
 
       <section className="knowledge-card">
         <div className="panel-header">
-          <span style={documentStatusTitleStyle}>文档状态</span>
-          <div style={documentStatusActionsStyle}>
+          <span style={documentStatusHeadingStyle}>
+            <span style={documentStatusTitleStyle}>文档状态</span>
             <span style={documentInfoWrapStyle}>
               <button
                 style={documentInfoButtonStyle}
@@ -147,6 +153,8 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
                 </span>
               ) : null}
             </span>
+          </span>
+          <div style={documentStatusActionsStyle}>
             <button className="text-button" onClick={props.onRefreshDocuments}>
               刷新
             </button>
