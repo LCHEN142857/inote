@@ -83,6 +83,37 @@ class DocumentServiceTest {
         assertThat(captor.getAllValues().get(1).getFileUrl()).isEqualTo("/api/v1/documents/files/doc-1");
     }
 
+    @Test
+    void uploadDocumentMarksSameNameOlderVersionsInactive() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "sample.txt", "text/plain", "new content".getBytes());
+        Document activeDocument = TestDataFactory.document("old-active", currentUser, "COMPLETED");
+        Document legacyDocument = TestDataFactory.document("old-legacy", currentUser, "COMPLETED");
+        legacyDocument.setActive(null);
+        Document inactiveDocument = TestDataFactory.document("old-inactive", currentUser, "COMPLETED");
+        inactiveDocument.setActive(Boolean.FALSE);
+
+        when(currentUserService.getCurrentUser()).thenReturn(currentUser);
+        when(processingService.saveFile(file, "./target/test-uploads"))
+                .thenReturn(Path.of("./target/test-uploads/new.txt"));
+        when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> {
+            Document document = invocation.getArgument(0, Document.class);
+            if (document.getId() == null) {
+                document.setId("doc-new");
+            }
+            return document;
+        });
+        when(documentRepository.findAllByOwnerIdAndFileNameOrderByUpdatedAtDesc("user-1", "sample.txt"))
+                .thenReturn(List.of(activeDocument, legacyDocument, inactiveDocument));
+
+        DocumentUploadResponse response = documentService.uploadDocument(file);
+
+        verify(documentRepository).saveAll(List.of(activeDocument, legacyDocument));
+        assertThat(activeDocument.getActive()).isFalse();
+        assertThat(legacyDocument.getActive()).isFalse();
+        assertThat(inactiveDocument.getActive()).isFalse();
+        assertThat(response.getDocumentId()).isEqualTo("doc-new");
+    }
+
     // 验证不支持的扩展名会被拒绝。
     @Test
     void uploadDocumentRejectsUnsupportedExtension() {
@@ -129,6 +160,7 @@ class DocumentServiceTest {
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).getDocumentId()).isEqualTo("doc-1");
         assertThat(responses.get(0).getStatus()).isEqualTo("COMPLETED");
+        assertThat(responses.get(0).getActive()).isTrue();
     }
 
     // 验证保存文件失败时会包装成文档存储异常。
