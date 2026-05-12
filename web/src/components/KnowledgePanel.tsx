@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import type { DocumentStatus, SourceReference } from "../types";
 import { formatFileSize, formatTime } from "../utils";
 
@@ -89,6 +89,7 @@ const documentInfoTipStyle: CSSProperties = {
 export function KnowledgePanel(props: KnowledgePanelProps) {
   const [documentQuery, setDocumentQuery] = useState("");
   const [documentInfoOpen, setDocumentInfoOpen] = useState(false);
+  const documentInfoRef = useRef<HTMLSpanElement | null>(null);
   const visibleDocuments = useMemo(() => {
     const keyword = documentQuery.trim().toLowerCase();
     const sorted = props.documents
@@ -103,6 +104,23 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
         document.status.toLowerCase().includes(keyword)
     );
   }, [documentQuery, props.documents]);
+
+  useEffect(() => {
+    if (!documentInfoOpen) return;
+
+    const closeOnOutsideInteraction = (event: PointerEvent | FocusEvent) => {
+      if (!documentInfoRef.current?.contains(event.target as Node)) {
+        setDocumentInfoOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideInteraction);
+    document.addEventListener("focusin", closeOnOutsideInteraction);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideInteraction);
+      document.removeEventListener("focusin", closeOnOutsideInteraction);
+    };
+  }, [documentInfoOpen]);
 
   return (
     <aside className="knowledge-panel">
@@ -135,7 +153,7 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
         <div className="panel-header">
           <span style={documentStatusHeadingStyle}>
             <span style={documentStatusTitleStyle}>文档状态</span>
-            <span style={documentInfoWrapStyle}>
+            <span style={documentInfoWrapStyle} ref={documentInfoRef}>
               <button
                 style={documentInfoButtonStyle}
                 type="button"

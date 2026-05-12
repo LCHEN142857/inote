@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   AuthResponse,
   ChatSession,
@@ -35,9 +35,27 @@ type ChatWorkspaceProps = {
 
 function MessageSources(props: { sources: SourceReference[] }) {
   const [activeSourceKey, setActiveSourceKey] = useState("");
+  const sourcesRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!activeSourceKey) return;
+
+    const closeOnOutsideInteraction = (event: PointerEvent | FocusEvent) => {
+      if (!sourcesRef.current?.contains(event.target as Node)) {
+        setActiveSourceKey("");
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideInteraction);
+    document.addEventListener("focusin", closeOnOutsideInteraction);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideInteraction);
+      document.removeEventListener("focusin", closeOnOutsideInteraction);
+    };
+  }, [activeSourceKey]);
 
   return (
-    <div className="inline-sources">
+    <div className="inline-sources" ref={sourcesRef}>
       {props.sources.map((source) => {
         const sourceKey = `${source.fileName}-${source.url}-${source.preview ?? ""}`;
         const isActive = activeSourceKey === sourceKey;
