@@ -986,6 +986,10 @@ a {
   padding: 14px;
 }
 
+.document-card {
+  position: relative;
+}
+
 .compact {
   color: var(--text-soft);
   font-size: 13px;
@@ -1029,11 +1033,94 @@ a {
   color: #b42318;
 }
 
-.document-error {
-  margin: 10px 0 0;
+.document-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.document-delete-button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #fdecec;
   color: #b42318;
-  font-size: 12px;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease;
+}
+
+.document-delete-button:hover {
+  transform: translateY(-1px);
+  background: #fbd6d6;
+}
+
+.document-delete-button svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(17, 17, 17, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+.confirm-dialog {
+  width: min(420px, 100%);
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-soft);
+}
+
+.confirm-dialog h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 18px;
+}
+
+.confirm-dialog p {
+  margin: 12px 0 18px;
+  color: var(--text-soft);
+  font-size: 14px;
   line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.danger-button {
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: #b42318;
+  color: #ffffff;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.danger-button:hover {
+  transform: translateY(-1px);
+}
+
+.danger-button:disabled,
+.confirm-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .source-card {

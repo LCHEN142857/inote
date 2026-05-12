@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
@@ -89,6 +91,29 @@ public class DocumentService {
         return findDocument(documentId);
     }
 
+    public void deleteFailedDocument(String documentId) {
+        Document document = findDocument(documentId);
+        if (!"FAILED".equalsIgnoreCase(document.getStatus())) {
+            throw new IllegalArgumentException("Only failed documents can be deleted.");
+        }
+        deleteStoredFile(document);
+        documentRepository.delete(document);
+    }
+
+    private void deleteStoredFile(Document document) {
+        try {
+            Path uploadRoot = Paths.get(uploadPath).toAbsolutePath().normalize();
+            Path filePath = Paths.get(document.getFilePath()).toAbsolutePath().normalize();
+            if (!filePath.startsWith(uploadRoot)) {
+                log.warn("Skip deleting file outside upload directory, documentId={}", document.getId());
+                return;
+            }
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            log.warn("Failed to delete stored file for failed document, documentId={}", document.getId(), e);
+        }
+    }
+
     private Document findDocument(String documentId) {
         User user = currentUserService.getCurrentUser();
         return documentRepository.findByIdAndOwnerId(documentId, user.getId())
@@ -119,7 +144,7 @@ public class DocumentService {
                 .fileSize(document.getFileSize())
                 .status(document.getStatus())
                 .active(isActiveVersion(document))
-                .errorMessage(document.getErrorMessage())
+                .errorMessage(null)
                 .updatedAt(document.getUpdatedAt())
                 .build();
     }

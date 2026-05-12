@@ -62,6 +62,8 @@ export default function App() {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
   const [toastMessage, setToastMessage] = useState("");
+  const [documentDeleteTarget, setDocumentDeleteTarget] = useState<DocumentStatus | null>(null);
+  const [documentDeleting, setDocumentDeleting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -489,6 +491,23 @@ export default function App() {
     }
   }
 
+  async function handleDeleteFailedDocument() {
+    if (!documentDeleteTarget || documentDeleting) return;
+
+    setDocumentDeleting(true);
+    setError("");
+    try {
+      await api.deleteDocument(documentDeleteTarget.documentId);
+      setDocumentDeleteTarget(null);
+      await refreshDocuments();
+    } catch (documentDeleteError) {
+      if (isUnauthorizedError(documentDeleteError)) return;
+      setError(documentDeleteError instanceof Error ? documentDeleteError.message : "删除文件失败");
+    } finally {
+      setDocumentDeleting(false);
+    }
+  }
+
   async function handleRenameSubmit(sessionId: string) {
     const title = renameDraft.trim();
     if (!title) return;
@@ -653,9 +672,36 @@ export default function App() {
           latestSources={latestSources}
           fileInputRef={fileInputRef}
           onUpload={(files) => void handleUpload(files)}
+          onDeleteDocument={setDocumentDeleteTarget}
           onRefreshDocuments={() => void refreshDocuments()}
         />
       </div>
+      {documentDeleteTarget ? (
+        <div className="confirm-overlay" role="presentation">
+          <div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-document-title">
+            <h3 id="delete-document-title">确认删除失败文件？</h3>
+            <p>{documentDeleteTarget.fileName}</p>
+            <div className="confirm-actions">
+              <button
+                className="text-button"
+                type="button"
+                disabled={documentDeleting}
+                onClick={() => setDocumentDeleteTarget(null)}
+              >
+                取消
+              </button>
+              <button
+                className="danger-button"
+                type="button"
+                disabled={documentDeleting}
+                onClick={() => void handleDeleteFailedDocument()}
+              >
+                {documentDeleting ? "删除中" : "确认删除"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

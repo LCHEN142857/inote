@@ -11,6 +11,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -72,6 +73,12 @@ public class DocumentController {
     @GetMapping("/{documentId}")
     public ResponseEntity<DocumentStatusResponse> getDocumentStatus(@PathVariable String documentId) {
         return ResponseEntity.ok(documentService.getDocumentStatus(documentId));
+    }
+
+    @DeleteMapping("/{documentId}")
+    public ResponseEntity<Void> deleteFailedDocument(@PathVariable String documentId) {
+        documentService.deleteFailedDocument(documentId);
+        return ResponseEntity.noContent().build();
     }
 
     /**

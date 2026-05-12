@@ -127,6 +127,10 @@ export const api = {
       body: JSON.stringify({ sessionId, question, model })
     }),
   listDocuments: () => request<DocumentStatus[]>("/api/v1/documents"),
+  deleteDocument: (documentId: string) =>
+    request<void>(`/api/v1/documents/${documentId}`, {
+      method: "DELETE"
+    }),
   uploadDocument: async (file: File): Promise<DocumentUploadResponse> => {
     const formData = new FormData();
     formData.append("file", file);

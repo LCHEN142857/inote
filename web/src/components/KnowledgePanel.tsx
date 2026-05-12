@@ -9,8 +9,17 @@ type KnowledgePanelProps = {
   latestSources: SourceReference[];
   fileInputRef: RefObject<HTMLInputElement>;
   onUpload: (files: FileList | null) => void;
+  onDeleteDocument: (document: DocumentStatus) => void;
   onRefreshDocuments: () => void;
 };
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-.7 11H7.7L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+    </svg>
+  );
+}
 
 export function KnowledgePanel(props: KnowledgePanelProps) {
   return (
@@ -54,26 +63,39 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
             props.documents
               .slice()
               .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-              .map((document) => (
-                <article key={document.documentId} className="document-card">
-                  <div className="document-title-row">
-                    <strong>{document.fileName}</strong>
-                    <span className={`status-pill status-${document.status.toLowerCase()}`}>
-                      {document.status}
-                    </span>
-                    <span className={`status-pill status-${document.active === false ? "failed" : "completed"}`}>
-                      {document.active === false ? "INACTIVE" : "ACTIVE"}
-                    </span>
-                  </div>
-                  <div className="document-meta">
-                    <span>{formatFileSize(document.fileSize)}</span>
-                    <time>{formatTime(document.updatedAt)}</time>
-                  </div>
-                  {document.errorMessage ? (
-                    <p className="document-error">{document.errorMessage}</p>
-                  ) : null}
-                </article>
-              ))
+              .map((document) => {
+                const failed = document.status.toUpperCase() === "FAILED";
+                return (
+                  <article key={document.documentId} className="document-card">
+                    <div className="document-title-row">
+                      <strong>{document.fileName}</strong>
+                      <span className={`status-pill status-${document.status.toLowerCase()}`}>
+                        {document.status}
+                      </span>
+                      <span className={`status-pill status-${document.active === false ? "failed" : "completed"}`}>
+                        {document.active === false ? "INACTIVE" : "ACTIVE"}
+                      </span>
+                    </div>
+                    <div className="document-meta">
+                      <span>{formatFileSize(document.fileSize)}</span>
+                      <time>{formatTime(document.updatedAt)}</time>
+                    </div>
+                    {failed ? (
+                      <div className="document-card-actions">
+                        <button
+                          className="document-delete-button"
+                          type="button"
+                          aria-label="删除失败文件"
+                          title="删除失败文件"
+                          onClick={() => props.onDeleteDocument(document)}
+                        >
+                          <TrashIcon />
+                        </button>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })
           )}
         </div>
       </section>
