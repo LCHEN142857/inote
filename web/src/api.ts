@@ -128,7 +128,7 @@ export const api = {
     }),
   listDocuments: () => request<DocumentStatus[]>("/api/v1/documents"),
   deleteDocument: (documentId: string) =>
-    request<void>(`/api/v1/documents/${documentId}`, {
+    request<void>(`/api/v1/documents/delete/${documentId}`, {
       method: "DELETE"
     }),
   uploadDocument: async (file: File): Promise<DocumentUploadResponse> => {

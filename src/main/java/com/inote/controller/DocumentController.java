@@ -75,7 +75,7 @@ public class DocumentController {
         return ResponseEntity.ok(documentService.getDocumentStatus(documentId));
     }
 
-    @DeleteMapping("/{documentId}")
+    @DeleteMapping("/delete/{documentId}")
     public ResponseEntity<Void> deleteFailedDocument(@PathVariable String documentId) {
         documentService.deleteFailedDocument(documentId);
         return ResponseEntity.noContent().build();
