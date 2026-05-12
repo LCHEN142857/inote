@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ChatSessionSummary } from "../types";
 import { formatTime } from "../utils";
 
@@ -31,7 +32,22 @@ type SessionSidebarProps = {
   onResetPassword: () => void;
 };
 
+function EyeIcon(props: { open: boolean }) {
+  return props.open ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 5c5.2 0 8.7 4.5 9.7 6-.9 1.5-4.5 6-9.7 6s-8.7-4.5-9.7-6c.9-1.5 4.5-6 9.7-6Zm0 2C8.8 7 6.2 9.3 4.7 11c1.5 1.7 4.1 4 7.3 4s5.8-2.3 7.3-4C17.8 9.3 15.2 7 12 7Zm0 1.2A2.8 2.8 0 1 1 12 13.8 2.8 2.8 0 0 1 12 8.2Z" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m4.3 3 16.7 16.7-1.3 1.3-3.1-3.1A10 10 0 0 1 12 19c-5.2 0-8.7-4.5-9.7-6a18 18 0 0 1 4.1-4.5L3 4.3 4.3 3Zm3.5 6.8A14 14 0 0 0 4.7 13c1.5 1.7 4.1 4 7.3 4 1.1 0 2.2-.3 3.1-.8l-1.7-1.7A2.8 2.8 0 0 1 10.5 11.6L7.8 9.8ZM12 7c-.7 0-1.3.1-1.9.3L8.5 5.7A10 10 0 0 1 12 5c5.2 0 8.7 4.5 9.7 6a16 16 0 0 1-3.2 3.7l-1.4-1.4a14 14 0 0 0 2.2-2.3C17.8 9.3 15.2 7 12 7Z" />
+    </svg>
+  );
+}
+
 export function SessionSidebar(props: SessionSidebarProps) {
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   return (
     <aside className={`sidebar ${props.sidebarOpen ? "open" : ""}`}>
       <div className="brand-card">
@@ -64,18 +80,38 @@ export function SessionSidebar(props: SessionSidebarProps) {
             </button>
           </div>
           <div className="password-grid">
-            <input
-              type="password"
-              value={props.newPassword}
-              onChange={(event) => props.onNewPasswordChange(event.target.value)}
-              placeholder="输入新密码"
-            />
-            <input
-              type="password"
-              value={props.confirmPassword}
-              onChange={(event) => props.onConfirmPasswordChange(event.target.value)}
-              placeholder="确认新密码"
-            />
+            <label className="password-input-wrap">
+              <input
+                type={showNewPassword ? "text" : "password"}
+                value={props.newPassword}
+                onChange={(event) => props.onNewPasswordChange(event.target.value)}
+                placeholder="输入新密码"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowNewPassword((value) => !value)}
+                aria-label={showNewPassword ? "隐藏新密码" : "显示新密码"}
+              >
+                <EyeIcon open={showNewPassword} />
+              </button>
+            </label>
+            <label className="password-input-wrap">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={props.confirmPassword}
+                onChange={(event) => props.onConfirmPasswordChange(event.target.value)}
+                placeholder="确认新密码"
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowConfirmPassword((value) => !value)}
+                aria-label={showConfirmPassword ? "隐藏确认密码" : "显示确认密码"}
+              >
+                <EyeIcon open={showConfirmPassword} />
+              </button>
+            </label>
             <button className="primary-button" onClick={props.onResetPassword} disabled={props.passwordSubmitting}>
               {props.passwordSubmitting ? "提交中" : "提交"}
             </button>
