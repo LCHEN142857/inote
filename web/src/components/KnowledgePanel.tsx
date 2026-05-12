@@ -358,17 +358,18 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
                     <button
                       className="reference-count-button"
                       type="button"
-                      onClick={(event) =>
+                      onClick={(event) => {
+                        const rect = event.currentTarget.getBoundingClientRect();
                         setOpenReferencedDocument((document) =>
                           document?.fileName === source.fileName
                             ? null
                             : {
                                 fileName: source.fileName,
-                                rect: event.currentTarget.getBoundingClientRect(),
+                                rect,
                                 sessions: source.sessions
                               }
-                        )
-                      }
+                        );
+                      }}
                     >
                       被引用 {source.count} 次
                     </button>
