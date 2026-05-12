@@ -547,6 +547,10 @@ a {
   padding-right: 2px;
 }
 
+.recent-references-header {
+  margin-bottom: 16px;
+}
+
 .session-card,
 .document-card,
 .source-card,

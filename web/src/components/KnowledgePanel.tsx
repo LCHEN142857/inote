@@ -340,9 +340,11 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
         </div>
       </section>
 
-      <section className="knowledge-card">
-        <div className="panel-header">
-          <span>最近引用</span>
+      <section className="knowledge-card recent-references-card">
+        <div className="panel-header recent-references-header">
+          <span style={documentStatusHeadingStyle}>
+            <span style={documentStatusTitleStyle}>最近引用</span>
+          </span>
         </div>
         <div className="source-list" ref={sourceListRef}>
           {referencedDocuments.length === 0 ? (
