@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type {
   AuthResponse,
   ChatSession,
@@ -34,54 +35,94 @@ type ChatWorkspaceProps = {
 };
 
 function MessageSources(props: { sources: SourceReference[] }) {
-  const [activeSourceKey, setActiveSourceKey] = useState("");
+  const [activeSource, setActiveSource] = useState<{
+    key: string;
+    source: SourceReference;
+    rect: DOMRect;
+  } | null>(null);
   const sourcesRef = useRef<HTMLDivElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const popoverWidth = Math.min(520, Math.max(280, window.innerWidth - 32));
+  const popoverLeft = activeSource
+    ? Math.min(Math.max(16, activeSource.rect.left), window.innerWidth - popoverWidth - 16)
+    : 16;
+  const popoverTop = activeSource ? activeSource.rect.top - 10 : 0;
 
   useEffect(() => {
-    if (!activeSourceKey) return;
+    if (!activeSource) return;
 
     const closeOnOutsideInteraction = (event: PointerEvent | FocusEvent) => {
-      if (!sourcesRef.current?.contains(event.target as Node)) {
-        setActiveSourceKey("");
+      const target = event.target as Node;
+      if (!sourcesRef.current?.contains(target) && !popoverRef.current?.contains(target)) {
+        setActiveSource(null);
       }
     };
+    const closeOnViewportChange = () => setActiveSource(null);
 
     document.addEventListener("pointerdown", closeOnOutsideInteraction);
     document.addEventListener("focusin", closeOnOutsideInteraction);
+    window.addEventListener("resize", closeOnViewportChange);
+    window.addEventListener("scroll", closeOnViewportChange, true);
     return () => {
       document.removeEventListener("pointerdown", closeOnOutsideInteraction);
       document.removeEventListener("focusin", closeOnOutsideInteraction);
+      window.removeEventListener("resize", closeOnViewportChange);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
     };
-  }, [activeSourceKey]);
+  }, [activeSource]);
 
   return (
     <div className="inline-sources" ref={sourcesRef}>
       {props.sources.map((source) => {
         const sourceKey = `${source.fileName}-${source.url}-${source.preview ?? ""}`;
-        const isActive = activeSourceKey === sourceKey;
+        const isActive = activeSource?.key === sourceKey;
 
         return (
           <div className="inline-source-wrap" key={sourceKey}>
             <button
               type="button"
               className="inline-source-card"
-              onClick={() => setActiveSourceKey(isActive ? "" : sourceKey)}
+              onClick={(event) =>
+                setActiveSource(
+                  isActive
+                    ? null
+                    : {
+                        key: sourceKey,
+                        source,
+                        rect: event.currentTarget.getBoundingClientRect()
+                      }
+                )
+              }
             >
               <strong>{source.fileName}</strong>
             </button>
-            {isActive ? (
-              <div className="source-popover" role="tooltip">
-                <div className="source-popover-title">{source.fileName}</div>
-                <p>{source.preview || "当前引用没有可预览的段落内容。"}</p>
-              </div>
-            ) : null}
           </div>
         );
       })}
+      {activeSource
+        ? createPortal(
+            <div
+              ref={popoverRef}
+              className="source-popover source-popover-floating"
+              role="tooltip"
+              style={{
+                position: "fixed",
+                left: popoverLeft,
+                top: popoverTop,
+                bottom: "auto",
+                transform: "translateY(-100%)",
+                width: popoverWidth
+              }}
+            >
+              <div className="source-popover-title">{activeSource.source.fileName}</div>
+              <p>{activeSource.source.preview || "当前引用没有可预览的段落内容。"}</p>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
-
 function PendingAnswer() {
   const [dotCount, setDotCount] = useState(0);
 
@@ -316,3 +357,4 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
     </main>
   );
 }
+
