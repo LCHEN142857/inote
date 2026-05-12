@@ -41,6 +41,11 @@ const documentStatusActionsStyle: CSSProperties = {
   gap: 8
 };
 
+const documentInfoWrapStyle: CSSProperties = {
+  position: "relative",
+  display: "inline-flex"
+};
+
 const documentInfoButtonStyle: CSSProperties = {
   display: "grid",
   placeItems: "center",
@@ -58,14 +63,21 @@ const documentInfoIconStyle: CSSProperties = {
 };
 
 const documentInfoTipStyle: CSSProperties = {
-  marginTop: 12,
+  position: "absolute",
+  top: "calc(100% + 10px)",
+  right: 0,
+  zIndex: 8,
+  width: 260,
   borderRadius: 16,
   border: "1px solid var(--line-soft)",
-  background: "rgba(247, 247, 248, 0.96)",
+  background: "rgba(255, 255, 255, 0.98)",
   color: "var(--text-soft)",
   padding: "10px 12px",
+  boxShadow: "0 14px 32px rgba(15, 23, 42, 0.14)",
   fontSize: 13,
-  lineHeight: 1.6
+  lineHeight: 1.6,
+  textAlign: "left",
+  pointerEvents: "none"
 };
 
 export function KnowledgePanel(props: KnowledgePanelProps) {
@@ -117,25 +129,29 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
         <div className="panel-header">
           <span style={documentStatusTitleStyle}>文档状态</span>
           <div style={documentStatusActionsStyle}>
-            <button
-              style={documentInfoButtonStyle}
-              type="button"
-              aria-label="文档上传说明"
-              title="文档上传说明"
-              onClick={() => setDocumentInfoOpen((value) => !value)}
-            >
-              <span style={documentInfoIconStyle}>
-                <InfoIcon />
-              </span>
-            </button>
+            <span style={documentInfoWrapStyle}>
+              <button
+                style={documentInfoButtonStyle}
+                type="button"
+                aria-label="文档上传说明"
+                title="文档上传说明"
+                onClick={() => setDocumentInfoOpen((value) => !value)}
+              >
+                <span style={documentInfoIconStyle}>
+                  <InfoIcon />
+                </span>
+              </button>
+              {documentInfoOpen ? (
+                <span style={documentInfoTipStyle}>
+                  上传相同名称的文档，以最新上传的文档信息为准
+                </span>
+              ) : null}
+            </span>
             <button className="text-button" onClick={props.onRefreshDocuments}>
               刷新
             </button>
           </div>
         </div>
-        {documentInfoOpen ? (
-          <div style={documentInfoTipStyle}>上传相同名称的文档，以最新上传的文档信息为准</div>
-        ) : null}
         <label className="document-search">
           <span className="sr-only">搜索文档</span>
           <input
