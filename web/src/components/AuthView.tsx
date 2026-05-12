@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import type { AuthCaptcha } from "../types";
+import { ProjectCornerLink } from "./ProjectCornerLink";
 
 type AuthViewProps = {
   captcha: AuthCaptcha | null;
@@ -96,6 +97,7 @@ export function AuthView(props: AuthViewProps) {
           </button>
         </form>
       </div>
+      <ProjectCornerLink />
     </div>
   );
 }

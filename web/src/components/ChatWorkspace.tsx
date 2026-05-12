@@ -7,6 +7,7 @@ import type {
   UserSettings
 } from "../types";
 import { formatTime } from "../utils";
+import { ProjectCornerLink } from "./ProjectCornerLink";
 
 type ChatWorkspaceProps = {
   authUser: AuthResponse;
@@ -138,6 +139,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
           </button>
         </div>
       </div>
+      <ProjectCornerLink />
     </main>
   );
 }
