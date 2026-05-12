@@ -24,7 +24,7 @@ import java.util.TreeMap;
 
 // 通过请求体和身份信息生成指纹，拦截短时间内的重复提交。
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 1)
+@Order(Ordered.HIGHEST_PRECEDENCE + 2)
 @RequiredArgsConstructor
 public class ReplayProtectionFilter extends OncePerRequestFilter {
 

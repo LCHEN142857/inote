@@ -11,6 +11,7 @@ import type {
 } from "./types";
 
 let authToken = window.localStorage.getItem("inote-auth-token") ?? "";
+let unauthorizedHandler: (() => void) | null = null;
 
 export class ApiError extends Error {
   status: number;
@@ -34,6 +35,10 @@ function buildHeaders(init?: RequestInit) {
   return headers;
 }
 
+function isPublicAuthRequest(input: string) {
+  return input === "/api/v1/auth/captcha" || input === "/api/v1/auth/login";
+}
+
 async function readErrorBody(response: Response) {
   try {
     return (await response.json()) as Record<string, unknown>;
@@ -51,6 +56,9 @@ async function request<T>(input: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const body = await readErrorBody(response);
     const message = typeof body.error === "string" ? body.error : typeof body.message === "string" ? body.message : "Request failed";
+    if (response.status === 401 && authToken && !isPublicAuthRequest(input)) {
+      unauthorizedHandler?.();
+    }
     throw new ApiError(message, response.status, body);
   }
 
@@ -69,6 +77,9 @@ export const api = {
     } else {
       window.localStorage.removeItem("inote-auth-token");
     }
+  },
+  setUnauthorizedHandler: (handler: (() => void) | null) => {
+    unauthorizedHandler = handler;
   },
   getCaptcha: () => request<AuthCaptcha>("/api/v1/auth/captcha"),
   login: (payload: {
@@ -129,6 +140,9 @@ export const api = {
     if (!response.ok) {
       const body = await readErrorBody(response);
       const message = typeof body.error === "string" ? body.error : typeof body.message === "string" ? body.message : "Upload failed";
+      if (response.status === 401 && authToken) {
+        unauthorizedHandler?.();
+      }
       throw new ApiError(message, response.status, body);
     }
 

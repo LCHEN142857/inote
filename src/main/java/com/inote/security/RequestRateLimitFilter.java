@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 
 // 在请求进入业务处理前执行基于路径和客户端 IP 的限流。
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @RequiredArgsConstructor
 public class RequestRateLimitFilter extends OncePerRequestFilter {
 

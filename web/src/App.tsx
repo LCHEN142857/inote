@@ -60,9 +60,57 @@ export default function App() {
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const [userSettings, setUserSettings] = useState<UserSettings>({ answerFromReferencesOnly: true });
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
+  const [toastMessage, setToastMessage] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
+  const authExpiryHandledRef = useRef(false);
+
+  function navigateTo(path: "/login" | "/index", replace = true) {
+    if (window.location.pathname !== path) {
+      if (replace) {
+        window.history.replaceState({}, "", path);
+      } else {
+        window.history.pushState({}, "", path);
+      }
+    }
+    setCurrentPath(path);
+  }
+
+  function clearWorkspaceState() {
+    setAuthUser(null);
+    setSessions([]);
+    setDocuments([]);
+    setSelectedSessionId("");
+    setSelectedSession(null);
+    setLatestAnswerMeta(null);
+    setComposer("");
+    setError("");
+    setPasswordDialogOpen(false);
+    setUserSettings({ answerFromReferencesOnly: true });
+    setAvailableModels([]);
+    setLoginLockUntil(0);
+    setLoginLockRemaining(0);
+  }
+
+  function showToast(message: string) {
+    setToastMessage(message);
+  }
+
+  function handleAuthExpired() {
+    if (authExpiryHandledRef.current) return;
+    authExpiryHandledRef.current = true;
+    api.setToken("");
+    clearWorkspaceState();
+    showToast("登录信息已过期，请重新登录");
+    navigateTo("/login");
+    void refreshCaptcha();
+  }
+
+  function isUnauthorizedError(error: unknown) {
+    return error instanceof ApiError && error.status === 401;
+  }
 
   useEffect(() => {
     setPinnedSessionIds(getStoredPinnedSessions());
@@ -92,6 +140,27 @@ export default function App() {
     const timer = window.setInterval(tick, 250);
     return () => window.clearInterval(timer);
   }, [loginLockUntil]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+
+    const timer = window.setTimeout(() => setToastMessage(""), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
+  useEffect(() => {
+    api.setUnauthorizedHandler(handleAuthExpired);
+    return () => api.setUnauthorizedHandler(null);
+  }, []);
 
   const activeAnswerMeta =
     latestAnswerMeta && latestAnswerMeta.sessionId === selectedSession?.id
@@ -136,6 +205,19 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [activeDocuments, authUser, uploading]);
 
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (authUser && currentPath !== "/index") {
+      navigateTo("/index");
+      return;
+    }
+
+    if (!authUser && currentPath !== "/login" && !window.localStorage.getItem("inote-auth-token")) {
+      navigateTo("/login");
+    }
+  }, [authLoading, authUser, currentPath]);
+
   async function refreshCaptcha() {
     setCaptcha(await api.getCaptcha());
   }
@@ -148,7 +230,10 @@ export default function App() {
       const token = window.localStorage.getItem("inote-auth-token");
       if (!token) {
         api.setToken("");
-        setAuthUser(null);
+        clearWorkspaceState();
+        if (currentPath !== "/login") {
+          navigateTo("/login");
+        }
         return;
       }
 
@@ -157,10 +242,14 @@ export default function App() {
       setAuthUser(user);
       setLoginLockUntil(0);
       setLoginLockRemaining(0);
+      navigateTo("/index");
       await bootstrapWorkspace();
     } catch {
       api.setToken("");
-      setAuthUser(null);
+      clearWorkspaceState();
+      if (currentPath !== "/login") {
+        navigateTo("/login");
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -198,6 +287,7 @@ export default function App() {
         setSelectedSession(null);
       }
     } catch (bootstrapError) {
+      if (isUnauthorizedError(bootstrapError)) return;
       setError(bootstrapError instanceof Error ? bootstrapError.message : "初始化失败");
     } finally {
       setLoading(false);
@@ -217,9 +307,11 @@ export default function App() {
         captchaCode: payload.captchaCode
       });
       api.setToken(user.token);
+      authExpiryHandledRef.current = false;
       setAuthUser(user);
       setLoginLockUntil(0);
       setLoginLockRemaining(0);
+      navigateTo("/index");
       await bootstrapWorkspace();
       await refreshCaptcha();
     } catch (loginError) {
@@ -242,20 +334,10 @@ export default function App() {
   }
 
   function handleLogout() {
+    authExpiryHandledRef.current = false;
     api.setToken("");
-    setAuthUser(null);
-    setSessions([]);
-    setDocuments([]);
-    setSelectedSessionId("");
-    setSelectedSession(null);
-    setLatestAnswerMeta(null);
-    setComposer("");
-    setError("");
-    setPasswordDialogOpen(false);
-    setUserSettings({ answerFromReferencesOnly: true });
-    setAvailableModels([]);
-    setLoginLockUntil(0);
-    setLoginLockRemaining(0);
+    clearWorkspaceState();
+    navigateTo("/login");
     void refreshCaptcha();
   }
 
@@ -278,6 +360,7 @@ export default function App() {
     try {
       setDocuments(await api.listDocuments());
     } catch (documentError) {
+      if (isUnauthorizedError(documentError)) return;
       setError(documentError instanceof Error ? documentError.message : "刷新文档失败");
     }
   }
@@ -289,6 +372,7 @@ export default function App() {
     try {
       setSelectedSession(await api.getSession(sessionId));
     } catch (sessionError) {
+      if (isUnauthorizedError(sessionError)) return;
       setError(sessionError instanceof Error ? sessionError.message : "加载会话失败");
     }
   }
@@ -302,6 +386,7 @@ export default function App() {
       setSidebarOpen(false);
       await refreshSessions(session.id);
     } catch (createError) {
+      if (isUnauthorizedError(createError)) return;
       setError(createError instanceof Error ? createError.message : "创建会话失败");
     }
   }
@@ -356,6 +441,7 @@ export default function App() {
       });
       await refreshSessions(responseSessionId);
     } catch (queryError) {
+      if (isUnauthorizedError(queryError)) return;
       if (queryError instanceof ApiError && queryError.status >= 500 && optimisticSession) {
         setError("");
         setSelectedSession({
@@ -393,6 +479,7 @@ export default function App() {
       await Promise.all(Array.from(files).map((file) => api.uploadDocument(file)));
       await refreshDocuments();
     } catch (uploadError) {
+      if (isUnauthorizedError(uploadError)) return;
       setError(uploadError instanceof Error ? uploadError.message : "上传失败");
     } finally {
       setUploading(false);
@@ -413,6 +500,7 @@ export default function App() {
       setRenameDraft("");
       await refreshSessions(updated.id);
     } catch (renameError) {
+      if (isUnauthorizedError(renameError)) return;
       setError(renameError instanceof Error ? renameError.message : "重命名失败");
     }
   }
@@ -427,6 +515,7 @@ export default function App() {
       }
       await refreshSessions();
     } catch (deleteError) {
+      if (isUnauthorizedError(deleteError)) return;
       setError(deleteError instanceof Error ? deleteError.message : "删除失败");
     }
   }
@@ -441,6 +530,7 @@ export default function App() {
       setPasswordDialogOpen(false);
       setError(response.message);
     } catch (passwordError) {
+      if (isUnauthorizedError(passwordError)) return;
       setError(passwordError instanceof Error ? passwordError.message : "密码重置失败");
     } finally {
       setPasswordSubmitting(false);
@@ -457,6 +547,7 @@ export default function App() {
     try {
       setUserSettings(await api.updateSettings(answerFromReferencesOnly));
     } catch (settingsError) {
+      if (isUnauthorizedError(settingsError)) return;
       setUserSettings(previous);
       setError(settingsError instanceof Error ? settingsError.message : "保存回答设置失败");
     } finally {
@@ -477,88 +568,94 @@ export default function App() {
 
   if (!authUser) {
     return (
-      <AuthView
-        captcha={captcha}
-        loading={authLoading}
-        submitting={authSubmitting}
-        error={authError}
-        loginLockRemaining={loginLockRemaining}
-        onRefresh={() => void refreshCaptcha()}
-        onSubmit={(payload) => void handleLogin(payload)}
-      />
+      <>
+        {toastMessage ? <div className="toast-banner">{toastMessage}</div> : null}
+        <AuthView
+          captcha={captcha}
+          loading={authLoading}
+          submitting={authSubmitting}
+          error={authError}
+          loginLockRemaining={loginLockRemaining}
+          onRefresh={() => void refreshCaptcha()}
+          onSubmit={(payload) => void handleLogin(payload)}
+        />
+      </>
     );
   }
 
   return (
-    <div className="app-shell">
-      <SessionSidebar
-        authUsername={authUser.username}
-        sidebarOpen={sidebarOpen}
-        sessionQuery={sessionQuery}
-        filteredSessions={filteredSessions}
-        pinnedSessionIds={pinnedSessionIds}
-        selectedSessionId={selectedSessionId}
-        renamingId={renamingId}
-        renameDraft={renameDraft}
-        passwordDialogOpen={passwordDialogOpen}
-        passwordSubmitting={passwordSubmitting}
-        newPassword={newPassword}
-        confirmPassword={confirmPassword}
-        onSessionQueryChange={setSessionQuery}
-        onRenameDraftChange={setRenameDraft}
-        onSelectSession={(sessionId) => void handleSelectSession(sessionId)}
-        onNewSession={() => void handleNewSession()}
-        onTogglePinSession={togglePinSession}
-        onStartRename={(sessionId, title) => {
-          setRenamingId(sessionId);
-          setRenameDraft(title);
-        }}
-        onCancelRename={() => {
-          setRenamingId("");
-          setRenameDraft("");
-        }}
-        onSubmitRename={(sessionId) => void handleRenameSubmit(sessionId)}
-        onDeleteSession={(sessionId) => void handleDeleteSession(sessionId)}
-        onOpenPasswordDialog={() => setPasswordDialogOpen(true)}
-        onClosePasswordDialog={() => setPasswordDialogOpen(false)}
-        onLogout={handleLogout}
-        onNewPasswordChange={setNewPassword}
-        onConfirmPasswordChange={setConfirmPassword}
-        onResetPassword={() => void handleResetPassword()}
-      />
+    <>
+      {toastMessage ? <div className="toast-banner">{toastMessage}</div> : null}
+      <div className="app-shell">
+        <SessionSidebar
+          authUsername={authUser.username}
+          sidebarOpen={sidebarOpen}
+          sessionQuery={sessionQuery}
+          filteredSessions={filteredSessions}
+          pinnedSessionIds={pinnedSessionIds}
+          selectedSessionId={selectedSessionId}
+          renamingId={renamingId}
+          renameDraft={renameDraft}
+          passwordDialogOpen={passwordDialogOpen}
+          passwordSubmitting={passwordSubmitting}
+          newPassword={newPassword}
+          confirmPassword={confirmPassword}
+          onSessionQueryChange={setSessionQuery}
+          onRenameDraftChange={setRenameDraft}
+          onSelectSession={(sessionId) => void handleSelectSession(sessionId)}
+          onNewSession={() => void handleNewSession()}
+          onTogglePinSession={togglePinSession}
+          onStartRename={(sessionId, title) => {
+            setRenamingId(sessionId);
+            setRenameDraft(title);
+          }}
+          onCancelRename={() => {
+            setRenamingId("");
+            setRenameDraft("");
+          }}
+          onSubmitRename={(sessionId) => void handleRenameSubmit(sessionId)}
+          onDeleteSession={(sessionId) => void handleDeleteSession(sessionId)}
+          onOpenPasswordDialog={() => setPasswordDialogOpen(true)}
+          onClosePasswordDialog={() => setPasswordDialogOpen(false)}
+          onLogout={handleLogout}
+          onNewPasswordChange={setNewPassword}
+          onConfirmPasswordChange={setConfirmPassword}
+          onResetPassword={() => void handleResetPassword()}
+        />
 
-      <ChatWorkspace
-        authUser={authUser}
-        selectedSession={selectedSession}
-        availableModels={availableModels}
-        selectedModel={selectedModel}
-        sessionsCount={sessions.length}
-        completedDocuments={completedDocuments}
-        activeDocuments={activeDocuments}
-        loading={loading}
-        sending={sending}
-        error={error}
-        messages={messages}
-        composer={composer}
-        userSettings={userSettings}
-        settingsSaving={settingsSaving}
-        messageEndRef={messageEndRef}
-        onToggleSidebar={() => setSidebarOpen((value) => !value)}
-        onModelChange={handleModelChange}
-        onReferenceModeChange={(value) => void handleReferenceModeChange(value)}
-        onComposerChange={setComposer}
-        onSend={(prompt) => void handleSend(prompt)}
-      />
+        <ChatWorkspace
+          authUser={authUser}
+          selectedSession={selectedSession}
+          availableModels={availableModels}
+          selectedModel={selectedModel}
+          sessionsCount={sessions.length}
+          completedDocuments={completedDocuments}
+          activeDocuments={activeDocuments}
+          loading={loading}
+          sending={sending}
+          error={error}
+          messages={messages}
+          composer={composer}
+          userSettings={userSettings}
+          settingsSaving={settingsSaving}
+          messageEndRef={messageEndRef}
+          onToggleSidebar={() => setSidebarOpen((value) => !value)}
+          onModelChange={handleModelChange}
+          onReferenceModeChange={(value) => void handleReferenceModeChange(value)}
+          onComposerChange={setComposer}
+          onSend={(prompt) => void handleSend(prompt)}
+        />
 
-      <KnowledgePanel
-        documents={documents}
-        uploading={uploading}
-        activeDocuments={activeDocuments}
-        latestSources={latestSources}
-        fileInputRef={fileInputRef}
-        onUpload={(files) => void handleUpload(files)}
-        onRefreshDocuments={() => void refreshDocuments()}
-      />
-    </div>
+        <KnowledgePanel
+          documents={documents}
+          uploading={uploading}
+          activeDocuments={activeDocuments}
+          latestSources={latestSources}
+          fileInputRef={fileInputRef}
+          onUpload={(files) => void handleUpload(files)}
+          onRefreshDocuments={() => void refreshDocuments()}
+        />
+      </div>
+    </>
   );
 }
