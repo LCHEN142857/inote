@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "rag")
 public class RagProperties {
 
-    private boolean queryRewriteEnabled = false;
+    private boolean queryRewriteEnabled = true;
 
     private boolean multiQueryEnabled = false;
     private int maxSubQueries = 3;
