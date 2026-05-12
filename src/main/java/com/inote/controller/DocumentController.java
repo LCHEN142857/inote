@@ -4,6 +4,7 @@ import com.inote.model.dto.DocumentStatusResponse;
 import com.inote.model.dto.DocumentUploadResponse;
 import com.inote.model.entity.Document;
 import com.inote.service.DocumentService;
+import com.inote.service.DocumentStorageException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

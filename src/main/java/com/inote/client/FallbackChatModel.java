@@ -64,7 +64,7 @@ public class FallbackChatModel implements ChatModel {
 
     public ChatResponse callWithFallback(ChatModel primaryModel, Prompt prompt) {
         try {
-            log.debug("Trying primary model...");
+            log.debug("Trying primary model [{}]...", effectiveModel(prompt));
             ChatResponse response = primaryModel.call(prompt);
             log.debug("Primary model succeeded");
             return response;
@@ -103,5 +103,13 @@ public class FallbackChatModel implements ChatModel {
             return new Prompt(messages, fallbackOptions);
         }
         return new Prompt(messages);
+    }
+
+    private String effectiveModel(Prompt prompt) {
+        ChatOptions options = prompt.getOptions();
+        if (options == null || options.getModel() == null || options.getModel().isBlank()) {
+            return "default";
+        }
+        return options.getModel();
     }
 }

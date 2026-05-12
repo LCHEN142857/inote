@@ -94,12 +94,12 @@ public class ChatService {
             if (userSettingsService.answerFromReferencesOnly()) {
                 answer = "当前文档信息不足，无法回答这个问题。";
             } else {
-                answer = callModelWithFallback(buildGeneralPrompt(question, history, modelName));
+                answer = callModelWithFallback(buildGeneralPrompt(question, history, modelName), modelName);
             }
         } else {
             String context = buildContext(relevantDocs);
             Prompt prompt = buildPrompt(question, context, history, modelName);
-            answer = callModelWithFallback(prompt);
+            answer = callModelWithFallback(prompt, modelName);
         }
 
         if (session != null) {
@@ -155,9 +155,9 @@ public class ChatService {
         return context.toString().trim();
     }
 
-    private String callModelWithFallback(Prompt prompt) {
+    private String callModelWithFallback(Prompt prompt, String modelName) {
         try {
-            ChatResponse response = fallbackChatModel.callWithFallback(chatModel, prompt);
+            ChatResponse response = fallbackChatModel.callWithFallback(chatModel, withModel(prompt, modelName));
             if (response.getResult() != null && response.getResult().getOutput() != null) {
                 return response.getResult().getOutput().getText();
             }
@@ -166,6 +166,10 @@ public class ChatService {
             log.error("Both primary and fallback models failed", e);
             return "The service is temporarily unavailable. Please try again later.";
         }
+    }
+
+    private Prompt withModel(Prompt prompt, String modelName) {
+        return new Prompt(prompt.getInstructions(), chatModelSelectionService.buildOptions(modelName));
     }
 
     private List<SourceReference> extractSources(List<Document> documents) {
