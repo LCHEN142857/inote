@@ -64,9 +64,9 @@ public class FallbackChatModel implements ChatModel {
 
     public ChatResponse callWithFallback(ChatModel primaryModel, Prompt prompt) {
         try {
-            log.debug("Trying primary model [{}]...", effectiveModel(prompt));
+            log.info("Trying primary model [{}]...", effectiveModel(prompt));
             ChatResponse response = primaryModel.call(prompt);
-            log.debug("Primary model succeeded");
+            log.info("Primary model succeeded");
             return response;
         } catch (Exception e) {
             log.warn("Primary model failed: {}, trying fallback model...", e.getMessage());
@@ -108,7 +108,7 @@ public class FallbackChatModel implements ChatModel {
     private String effectiveModel(Prompt prompt) {
         ChatOptions options = prompt.getOptions();
         if (options == null || options.getModel() == null || options.getModel().isBlank()) {
-            return "default";
+            return "deepseek-v4-pro";
         }
         return options.getModel();
     }
