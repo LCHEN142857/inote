@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { useMemo, useState, type RefObject } from "react";
 import type { DocumentStatus, SourceReference } from "../types";
 import { formatFileSize, formatTime } from "../utils";
 
@@ -22,6 +22,22 @@ function TrashIcon() {
 }
 
 export function KnowledgePanel(props: KnowledgePanelProps) {
+  const [documentQuery, setDocumentQuery] = useState("");
+  const visibleDocuments = useMemo(() => {
+    const keyword = documentQuery.trim().toLowerCase();
+    const sorted = props.documents
+      .slice()
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+    if (!keyword) return sorted;
+
+    return sorted.filter(
+      (document) =>
+        document.fileName.toLowerCase().includes(keyword) ||
+        document.status.toLowerCase().includes(keyword)
+    );
+  }, [documentQuery, props.documents]);
+
   return (
     <aside className="knowledge-panel">
       <section className="knowledge-card upload-card">
@@ -56,46 +72,53 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
             刷新
           </button>
         </div>
+        <label className="document-search">
+          <span className="sr-only">搜索文档</span>
+          <input
+            value={documentQuery}
+            onChange={(event) => setDocumentQuery(event.target.value)}
+            placeholder="搜索文档"
+          />
+        </label>
         <div className="document-list">
           {props.documents.length === 0 ? (
             <div className="empty-tile compact">还没有文档。</div>
+          ) : visibleDocuments.length === 0 ? (
+            <div className="empty-tile compact">没有匹配的文档</div>
           ) : (
-            props.documents
-              .slice()
-              .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-              .map((document) => {
-                const failed = document.status.toUpperCase() === "FAILED";
-                return (
-                  <article key={document.documentId} className="document-card">
-                    <div className="document-title-row">
-                      <strong>{document.fileName}</strong>
-                      <span className={`status-pill status-${document.status.toLowerCase()}`}>
-                        {document.status}
-                      </span>
-                      <span className={`status-pill status-${document.active === false ? "failed" : "completed"}`}>
-                        {document.active === false ? "INACTIVE" : "ACTIVE"}
-                      </span>
+            visibleDocuments.map((document) => {
+              const failed = document.status.toUpperCase() === "FAILED";
+              return (
+                <article key={document.documentId} className="document-card">
+                  <div className="document-title-row">
+                    <strong>{document.fileName}</strong>
+                    <span className={`status-pill status-${document.status.toLowerCase()}`}>
+                      {document.status}
+                    </span>
+                    <span className={`status-pill status-${document.active === false ? "failed" : "completed"}`}>
+                      {document.active === false ? "INACTIVE" : "ACTIVE"}
+                    </span>
+                  </div>
+                  <div className="document-meta">
+                    <span>{formatFileSize(document.fileSize)}</span>
+                    <time>{formatTime(document.updatedAt)}</time>
+                  </div>
+                  {failed ? (
+                    <div className="document-card-actions">
+                      <button
+                        className="document-delete-button"
+                        type="button"
+                        aria-label="删除失败文件"
+                        title="删除失败文件"
+                        onClick={() => props.onDeleteDocument(document)}
+                      >
+                        <TrashIcon />
+                      </button>
                     </div>
-                    <div className="document-meta">
-                      <span>{formatFileSize(document.fileSize)}</span>
-                      <time>{formatTime(document.updatedAt)}</time>
-                    </div>
-                    {failed ? (
-                      <div className="document-card-actions">
-                        <button
-                          className="document-delete-button"
-                          type="button"
-                          aria-label="删除失败文件"
-                          title="删除失败文件"
-                          onClick={() => props.onDeleteDocument(document)}
-                        >
-                          <TrashIcon />
-                        </button>
-                      </div>
-                    ) : null}
-                  </article>
-                );
-              })
+                  ) : null}
+                </article>
+              );
+            })
           )}
         </div>
       </section>

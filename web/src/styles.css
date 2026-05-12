@@ -425,6 +425,26 @@ a {
   color: var(--text-main);
 }
 
+.document-search {
+  display: block;
+  margin: 12px 0;
+}
+
+.document-search input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  padding: 0 14px;
+  outline: none;
+  background: rgba(250, 250, 250, 0.96);
+  color: var(--text-main);
+}
+
+.document-search input:focus {
+  border-color: rgba(17, 17, 17, 0.2);
+}
+
 .session-list,
 .document-list,
 .source-list {
@@ -435,6 +455,11 @@ a {
 }
 
 .session-list {
+  padding-right: 2px;
+}
+
+.knowledge-card .document-list {
+  max-height: 540px;
   padding-right: 2px;
 }
 
