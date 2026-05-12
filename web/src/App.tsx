@@ -60,7 +60,7 @@ export default function App() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
-  const [userSettings, setUserSettings] = useState<UserSettings>({ answerFromReferencesOnly: true });
+  const [userSettings, setUserSettings] = useState<UserSettings>({ answerFromReferencesOnly: false });
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
   const [toastMessage, setToastMessage] = useState("");
@@ -93,7 +93,7 @@ export default function App() {
     setComposer("");
     setError("");
     setPasswordDialogOpen(false);
-    setUserSettings({ answerFromReferencesOnly: true });
+    setUserSettings({ answerFromReferencesOnly: false });
     setAvailableModels([]);
     setLoginLockUntil(0);
     setLoginLockRemaining(0);

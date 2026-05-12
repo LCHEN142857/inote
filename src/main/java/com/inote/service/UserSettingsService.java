@@ -54,9 +54,9 @@ public class UserSettingsService {
      * @throws com.inote.security.UnauthorizedException 当前请求未认证时抛出。
      */
     public boolean answerFromReferencesOnly() {
-        // 读取当前用户偏好，空值按默认开启处理。
+        // 读取当前用户偏好，空值按默认关闭处理。
         User user = currentUserService.getCurrentUser();
-        return Boolean.TRUE.equals(user.getAnswerFromReferencesOnly()) || user.getAnswerFromReferencesOnly() == null;
+        return Boolean.TRUE.equals(user.getAnswerFromReferencesOnly());
     }
 
     /**
@@ -65,9 +65,9 @@ public class UserSettingsService {
      * @return 用户设置响应对象。
      */
     private UserSettingsResponse toResponse(User user) {
-        // 空偏好代表历史用户默认启用仅引用回答。
+        // 空偏好代表历史用户默认关闭仅引用回答。
         return UserSettingsResponse.builder()
-                .answerFromReferencesOnly(Boolean.TRUE.equals(user.getAnswerFromReferencesOnly()) || user.getAnswerFromReferencesOnly() == null)
+                .answerFromReferencesOnly(Boolean.TRUE.equals(user.getAnswerFromReferencesOnly()))
                 .build();
     }
 }

@@ -94,8 +94,8 @@ public class User {
         updatedAt = now;
         // 根据条件判断当前分支是否执行。
         if (answerFromReferencesOnly == null) {
-            // 默认保持原有的仅根据文档回答行为。
-            answerFromReferencesOnly = Boolean.TRUE;
+            // 默认关闭仅根据参考文档回答，让新用户可以获得通用模型回答。
+            answerFromReferencesOnly = Boolean.FALSE;
         }
     }
 
