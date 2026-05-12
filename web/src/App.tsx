@@ -10,6 +10,7 @@ import type {
   ChatSession,
   ChatSessionSummary,
   DocumentStatus,
+  LocalChatMessage,
   SourceReference,
   UserSettings
 } from "./types";
@@ -415,18 +416,20 @@ export default function App() {
 
       const messageSuffix = Date.now();
       optimisticAssistantMessageId = `a-${messageSuffix}`;
+      const optimisticMessages: LocalChatMessage[] = [
+        ...baseSession.messages,
+        { id: `u-${messageSuffix}`, role: "user", content: question, createdAt: now },
+        {
+          id: optimisticAssistantMessageId,
+          role: "assistant",
+          content: "",
+          pending: true,
+          createdAt: now
+        }
+      ];
       optimisticSession = {
         ...baseSession,
-        messages: [
-          ...baseSession.messages,
-          { id: `u-${messageSuffix}`, role: "user", content: question, createdAt: now },
-          {
-            id: optimisticAssistantMessageId,
-            role: "assistant",
-            content: "generating...",
-            createdAt: now
-          }
-        ]
+        messages: optimisticMessages
       };
 
       setSelectedSessionId(ensuredSessionId);
@@ -456,7 +459,7 @@ export default function App() {
                   ...current,
                   messages: current.messages.map((message) =>
                     message.id === optimisticAssistantMessageId
-                      ? { ...message, content: `${message.content === "generating..." ? "" : message.content}${delta}`, pending: true }
+                      ? { ...message, content: `${message.content}${delta}`, pending: true }
                       : message
                   )
                 }

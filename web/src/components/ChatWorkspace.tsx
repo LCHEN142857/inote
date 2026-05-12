@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { useEffect, useState } from "react";
 import type {
   AuthResponse,
   ChatSession,
@@ -33,22 +34,169 @@ type ChatWorkspaceProps = {
 };
 
 function MessageSources(props: { sources: SourceReference[] }) {
+  const [activeSourceKey, setActiveSourceKey] = useState("");
+
   return (
     <div className="inline-sources">
-      {props.sources.map((source) => (
-        <a
-          key={`${source.fileName}-${source.url}-${source.preview ?? ""}`}
-          href={source.url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-source-card"
-        >
-          <strong>{source.fileName}</strong>
-          {source.preview ? <span>{source.preview}</span> : null}
-        </a>
-      ))}
+      {props.sources.map((source) => {
+        const sourceKey = `${source.fileName}-${source.url}-${source.preview ?? ""}`;
+        const isActive = activeSourceKey === sourceKey;
+
+        return (
+          <div className="inline-source-wrap" key={sourceKey}>
+            <button
+              type="button"
+              className="inline-source-card"
+              onClick={() => setActiveSourceKey(isActive ? "" : sourceKey)}
+            >
+              <strong>{source.fileName}</strong>
+            </button>
+            {isActive ? (
+              <div className="source-popover" role="tooltip">
+                <div className="source-popover-title">{source.fileName}</div>
+                <p>{source.preview || "当前引用没有可预览的段落内容。"}</p>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
+}
+
+function PendingAnswer() {
+  const [dotCount, setDotCount] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setDotCount((value) => (value + 1) % 4);
+    }, 450);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return <span className="generating-text">Generating{".".repeat(dotCount)}</span>;
+}
+
+function MarkdownBody(props: { content: string }) {
+  return (
+    <div className="message-body rich-body">
+      {parseMarkdownBlocks(props.content).map((block, index) => {
+        if (block.type === "ul") {
+          return (
+            <ul key={index}>
+              {block.items.map((item, itemIndex) => (
+                <li key={itemIndex}>{renderInlineMarkdown(item)}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        if (block.type === "ol") {
+          return (
+            <ol key={index}>
+              {block.items.map((item, itemIndex) => (
+                <li key={itemIndex}>{renderInlineMarkdown(item)}</li>
+              ))}
+            </ol>
+          );
+        }
+
+        return <p key={index}>{renderInlineMarkdown(block.text)}</p>;
+      })}
+    </div>
+  );
+}
+
+type MarkdownBlock =
+  | { type: "p"; text: string }
+  | { type: "ul"; items: string[] }
+  | { type: "ol"; items: string[] };
+
+function parseMarkdownBlocks(content: string): MarkdownBlock[] {
+  const blocks: MarkdownBlock[] = [];
+  let paragraph: string[] = [];
+  let list: { type: "ul" | "ol"; items: string[] } | null = null;
+
+  function flushParagraph() {
+    if (!paragraph.length) return;
+    blocks.push({ type: "p", text: paragraph.join("\n") });
+    paragraph = [];
+  }
+
+  function flushList() {
+    if (!list) return;
+    blocks.push(list);
+    list = null;
+  }
+
+  content.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    const unordered = trimmed.match(/^[-*]\s+(.+)$/);
+    const ordered = trimmed.match(/^\d+[.)]\s+(.+)$/);
+
+    if (!trimmed) {
+      flushParagraph();
+      flushList();
+      return;
+    }
+
+    if (unordered) {
+      flushParagraph();
+      if (!list || list.type !== "ul") {
+        flushList();
+        list = { type: "ul", items: [] };
+      }
+      list.items.push(unordered[1]);
+      return;
+    }
+
+    if (ordered) {
+      flushParagraph();
+      if (!list || list.type !== "ol") {
+        flushList();
+        list = { type: "ol", items: [] };
+      }
+      list.items.push(ordered[1]);
+      return;
+    }
+
+    flushList();
+    paragraph.push(trimmed);
+  });
+
+  flushParagraph();
+  flushList();
+  return blocks.length ? blocks : [{ type: "p", text: content }];
+}
+
+function renderInlineMarkdown(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code key={index}>{part.slice(1, -1)}</code>;
+    }
+    return part;
+  });
+}
+
+function MessageBody(props: { message: LocalChatMessage }) {
+  if (props.message.pending && !props.message.content) {
+    return (
+      <div className="message-body plain-body pending-body">
+        <PendingAnswer />
+      </div>
+    );
+  }
+
+  if (props.message.role.toLowerCase() === "assistant" && !props.message.pending) {
+    return <MarkdownBody content={props.message.content} />;
+  }
+
+  return <div className="message-body plain-body">{props.message.content}</div>;
 }
 
 export function ChatWorkspace(props: ChatWorkspaceProps) {
@@ -93,7 +241,7 @@ export function ChatWorkspace(props: ChatWorkspaceProps) {
                   {message.role.toLowerCase() === "user" ? props.authUser.username : "inote"}
                   <time>{formatTime(message.createdAt)}</time>
                 </div>
-                <div className="message-body plain-body">{message.content}</div>
+                <MessageBody message={message} />
                 {message.sources?.length ? <MessageSources sources={message.sources} /> : null}
               </article>
             ))}
