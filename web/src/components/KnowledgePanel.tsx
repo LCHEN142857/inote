@@ -61,6 +61,9 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
                     <span className={`status-pill status-${document.status.toLowerCase()}`}>
                       {document.status}
                     </span>
+                    <span className={`status-pill status-${document.active === false ? "failed" : "completed"}`}>
+                      {document.active === false ? "INACTIVE" : "ACTIVE"}
+                    </span>
                   </div>
                   <div className="document-meta">
                     <span>{formatFileSize(document.fileSize)}</span>

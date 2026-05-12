@@ -57,6 +57,7 @@ export interface DocumentStatus {
   fileName: string;
   fileSize: number;
   status: string;
+  active?: boolean | null;
   errorMessage?: string | null;
   updatedAt: string;
 }
