@@ -1,5 +1,7 @@
 package com.inote.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inote.client.FallbackChatModel;
 import com.inote.model.dto.ChatRequest;
 import com.inote.model.dto.InoteResponse;
@@ -42,7 +44,9 @@ public class ChatService {
             1. Answer only from the provided reference documents.
             2. If the documents do not contain the answer, say that the current documents do not provide enough information.
             3. When chat history exists, use it to understand follow-up questions.
-            4. Keep the answer concise and accurate, and cite sources when possible.
+            4. Keep the answer concise and accurate.
+            5. When citing or referring to evidence, use the file name provided in the reference documents.
+            6. Never use placeholder labels such as "Document 1", "[Document 1]", "Source 1", or similar internal numbering in the final answer.
 
             Reference documents:
             {context}
@@ -66,6 +70,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserSettingsService userSettingsService;
     private final ChatModelSelectionService chatModelSelectionService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public InoteResponse query(ChatRequest request) {
@@ -98,7 +103,7 @@ public class ChatService {
         }
 
         if (session != null) {
-            persistConversation(session, question, answer, history.isEmpty());
+            persistConversation(session, question, answer, sources, history.isEmpty());
         }
 
         return InoteResponse.builder()
@@ -139,11 +144,13 @@ public class ChatService {
 
     private String buildContext(List<Document> documents) {
         StringBuilder context = new StringBuilder();
-        for (int i = 0; i < documents.size(); i++) {
-            Document doc = documents.get(i);
-            context.append("[Document ").append(i + 1).append("]\n");
-            context.append(doc.getText());
-            context.append("\n\n");
+        for (Document doc : documents) {
+            String fileName = extractFileName(doc);
+            context.append("<reference>\n");
+            context.append("file_name: ").append(fileName).append("\n");
+            context.append("content:\n");
+            context.append(doc.getText()).append("\n");
+            context.append("</reference>\n\n");
         }
         return context.toString().trim();
     }
@@ -166,7 +173,7 @@ public class ChatService {
         return documents.stream()
                 .map(doc -> {
                     Map<String, Object> metadata = doc.getMetadata();
-                    String fileName = metadata.getOrDefault("file_name", "unknown").toString();
+                    String fileName = extractFileName(doc);
                     String url = metadata.getOrDefault("file_url", "").toString();
                     return SourceReference.builder()
                             .fileName(fileName)
@@ -184,6 +191,15 @@ public class ChatService {
                 .toList();
     }
 
+    private String extractFileName(Document doc) {
+        Object fileName = doc.getMetadata().get("file_name");
+        if (fileName == null) {
+            return "unknown";
+        }
+        String value = fileName.toString().trim();
+        return value.isEmpty() ? "unknown" : value;
+    }
+
     private ChatSession resolveSession(String sessionId) {
         if (!StringUtils.hasText(sessionId)) {
             return null;
@@ -191,7 +207,13 @@ public class ChatService {
         return chatSessionService.getSessionEntity(sessionId.trim());
     }
 
-    private void persistConversation(ChatSession session, String question, String answer, boolean firstTurn) {
+    private void persistConversation(
+            ChatSession session,
+            String question,
+            String answer,
+            List<SourceReference> sources,
+            boolean firstTurn
+    ) {
         chatMessageRepository.save(ChatMessage.builder()
                 .session(session)
                 .role("user")
@@ -202,12 +224,25 @@ public class ChatService {
                 .session(session)
                 .role("assistant")
                 .content(answer)
+                .sourcesJson(serializeSources(sources))
                 .build());
 
         if (firstTurn && "New Session".equals(session.getTitle())) {
             session.setTitle(buildSessionTitle(question));
         }
         chatSessionService.touchSession(session);
+    }
+
+    private String serializeSources(List<SourceReference> sources) {
+        if (sources == null || sources.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(sources);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize chat sources", e);
+            return null;
+        }
     }
 
     private String buildSessionTitle(String question) {

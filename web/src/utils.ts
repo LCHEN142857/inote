@@ -36,23 +36,18 @@ export function buildMessages(
 ) {
   if (!session) return [];
 
-  let answerMatched = false;
   return [...session.messages]
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     .map<LocalChatMessage>((message) => {
-      const attachSources =
-        !answerMatched &&
-        latestAnswer &&
-        message.role.toLowerCase() === "assistant" &&
-        message.content === latestAnswer.answer;
-
-      if (attachSources) {
-        answerMatched = true;
-      }
-
       return {
         ...message,
-        sources: attachSources ? latestAnswer.sources : undefined
+        sources:
+          message.sources ??
+          (latestAnswer &&
+          message.role.toLowerCase() === "assistant" &&
+          message.content === latestAnswer.answer
+            ? latestAnswer.sources
+            : undefined)
       };
     });
 }

@@ -33,6 +33,7 @@ export interface ChatMessage {
   role: string;
   content: string;
   createdAt: string;
+  sources?: SourceReference[];
 }
 
 export interface ChatSession {
