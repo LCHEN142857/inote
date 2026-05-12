@@ -1,4 +1,4 @@
-import { useMemo, useState, type RefObject } from "react";
+import { useMemo, useState, type CSSProperties, type RefObject } from "react";
 import type { DocumentStatus, SourceReference } from "../types";
 import { formatFileSize, formatTime } from "../utils";
 
@@ -21,8 +21,56 @@ function TrashIcon() {
   );
 }
 
+function InfoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M11 10h2v7h-2v-7Zm0-3h2v2h-2V7Zm1-5a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" />
+    </svg>
+  );
+}
+
+const documentStatusTitleStyle: CSSProperties = {
+  color: "var(--text-main)",
+  fontSize: 15,
+  fontWeight: 650
+};
+
+const documentStatusActionsStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8
+};
+
+const documentInfoButtonStyle: CSSProperties = {
+  display: "grid",
+  placeItems: "center",
+  width: 32,
+  height: 32,
+  borderRadius: 999,
+  background: "rgba(247, 247, 248, 0.95)",
+  color: "var(--text-soft)"
+};
+
+const documentInfoIconStyle: CSSProperties = {
+  width: 18,
+  height: 18,
+  fill: "currentColor"
+};
+
+const documentInfoTipStyle: CSSProperties = {
+  marginTop: 12,
+  borderRadius: 16,
+  border: "1px solid var(--line-soft)",
+  background: "rgba(247, 247, 248, 0.96)",
+  color: "var(--text-soft)",
+  padding: "10px 12px",
+  fontSize: 13,
+  lineHeight: 1.6
+};
+
 export function KnowledgePanel(props: KnowledgePanelProps) {
   const [documentQuery, setDocumentQuery] = useState("");
+  const [documentInfoOpen, setDocumentInfoOpen] = useState(false);
   const visibleDocuments = useMemo(() => {
     const keyword = documentQuery.trim().toLowerCase();
     const sorted = props.documents
@@ -67,11 +115,27 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
 
       <section className="knowledge-card">
         <div className="panel-header">
-          <span>文档状态</span>
-          <button className="text-button" onClick={props.onRefreshDocuments}>
-            刷新
-          </button>
+          <span style={documentStatusTitleStyle}>文档状态</span>
+          <div style={documentStatusActionsStyle}>
+            <button
+              style={documentInfoButtonStyle}
+              type="button"
+              aria-label="文档上传说明"
+              title="文档上传说明"
+              onClick={() => setDocumentInfoOpen((value) => !value)}
+            >
+              <span style={documentInfoIconStyle}>
+                <InfoIcon />
+              </span>
+            </button>
+            <button className="text-button" onClick={props.onRefreshDocuments}>
+              刷新
+            </button>
+          </div>
         </div>
+        {documentInfoOpen ? (
+          <div style={documentInfoTipStyle}>上传相同名称的文档，以最新上传的文档信息为准</div>
+        ) : null}
         <label className="document-search">
           <span className="sr-only">搜索文档</span>
           <input
