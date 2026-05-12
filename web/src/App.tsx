@@ -33,6 +33,7 @@ export default function App() {
   const [loginLockRemaining, setLoginLockRemaining] = useState(0);
 
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [sessionDetails, setSessionDetails] = useState<ChatSession[]>([]);
   const [documents, setDocuments] = useState<DocumentStatus[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null);
@@ -84,6 +85,7 @@ export default function App() {
   function clearWorkspaceState() {
     setAuthUser(null);
     setSessions([]);
+    setSessionDetails([]);
     setDocuments([]);
     setSelectedSessionId("");
     setSelectedSession(null);
@@ -270,6 +272,8 @@ export default function App() {
       ]);
 
       setSessions(sessionList);
+      const sessionDetailList = await Promise.all(sessionList.map((session) => api.getSession(session.id)));
+      setSessionDetails(sessionDetailList);
       setDocuments(documentList);
       setUserSettings(settings);
       setAvailableModels(modelCatalog.availableModels);
@@ -284,11 +288,7 @@ export default function App() {
 
       const firstSessionId = sessionList[0]?.id ?? "";
       setSelectedSessionId(firstSessionId);
-      if (firstSessionId) {
-        setSelectedSession(await api.getSession(firstSessionId));
-      } else {
-        setSelectedSession(null);
-      }
+      setSelectedSession(sessionDetailList.find((session) => session.id === firstSessionId) ?? null);
     } catch (bootstrapError) {
       if (isUnauthorizedError(bootstrapError)) return;
       setError(bootstrapError instanceof Error ? bootstrapError.message : "初始化失败");
@@ -347,16 +347,14 @@ export default function App() {
   async function refreshSessions(targetId?: string) {
     const sessionList = await api.listSessions();
     setSessions(sessionList);
+    const sessionDetailList = await Promise.all(sessionList.map((session) => api.getSession(session.id)));
+    setSessionDetails(sessionDetailList);
     const nextId =
       targetId ??
       (sessionList.some((item) => item.id === selectedSessionId) ? selectedSessionId : sessionList[0]?.id ?? "");
 
     setSelectedSessionId(nextId);
-    if (nextId) {
-      setSelectedSession(await api.getSession(nextId));
-    } else {
-      setSelectedSession(null);
-    }
+    setSelectedSession(sessionDetailList.find((session) => session.id === nextId) ?? null);
   }
 
   async function refreshDocuments() {
@@ -717,6 +715,7 @@ export default function App() {
           documents={documents}
           uploading={uploading}
           activeDocuments={activeDocuments}
+          sessions={sessionDetails}
           latestSources={latestSources}
           fileInputRef={fileInputRef}
           onUpload={(files) => void handleUpload(files)}

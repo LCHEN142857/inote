@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
-import type { DocumentStatus, SourceReference } from "../types";
+import { createPortal } from "react-dom";
+import type { ChatSession, DocumentStatus, SourceReference } from "../types";
 import { formatFileSize, formatTime } from "../utils";
 
 type KnowledgePanelProps = {
@@ -7,6 +8,7 @@ type KnowledgePanelProps = {
   uploading: boolean;
   activeDocuments: number;
   latestSources: SourceReference[];
+  sessions: ChatSession[];
   fileInputRef: RefObject<HTMLInputElement>;
   onUpload: (files: FileList | null) => void;
   onDeleteDocument: (document: DocumentStatus) => void;
@@ -86,10 +88,87 @@ const documentInfoTipStyle: CSSProperties = {
   pointerEvents: "none"
 };
 
+type ReferencedSessionSummary = {
+  sessionId: string;
+  title: string;
+  count: number;
+};
+
+type ReferencedDocumentSummary = {
+  fileName: string;
+  count: number;
+  sessions: ReferencedSessionSummary[];
+};
+
+function buildReferencedDocuments(sessions: ChatSession[], latestSources: SourceReference[]) {
+  const documentStats = new Map<string, { count: number; sessions: Map<string, ReferencedSessionSummary> }>();
+
+  const addSource = (source: SourceReference, session: ChatSession) => {
+    const fileName = source.fileName.trim();
+    if (!fileName) return;
+
+    const documentStat = documentStats.get(fileName) ?? { count: 0, sessions: new Map() };
+    const sessionStat = documentStat.sessions.get(session.id) ?? {
+      sessionId: session.id,
+      title: session.title || "未命名会话",
+      count: 0
+    };
+
+    documentStat.count += 1;
+    sessionStat.count += 1;
+    documentStat.sessions.set(session.id, sessionStat);
+    documentStats.set(fileName, documentStat);
+  };
+
+  sessions.forEach((session) => {
+    session.messages.forEach((message) => {
+      message.sources?.forEach((source) => addSource(source, session));
+    });
+  });
+
+  if (documentStats.size === 0 && latestSources.length > 0) {
+    const latestSession: ChatSession = {
+      id: "latest-answer",
+      title: "当前会话",
+      createdAt: "",
+      updatedAt: "",
+      messages: []
+    };
+    latestSources.forEach((source) => addSource(source, latestSession));
+  }
+
+  return Array.from(documentStats.entries())
+    .map<ReferencedDocumentSummary>(([fileName, stat]) => ({
+      fileName,
+      count: stat.count,
+      sessions: Array.from(stat.sessions.values()).sort((a, b) => b.count - a.count)
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+}
+
 export function KnowledgePanel(props: KnowledgePanelProps) {
   const [documentQuery, setDocumentQuery] = useState("");
   const [documentInfoOpen, setDocumentInfoOpen] = useState(false);
+  const [openReferencedDocument, setOpenReferencedDocument] = useState<{
+    fileName: string;
+    rect: DOMRect;
+    sessions: ReferencedSessionSummary[];
+  } | null>(null);
   const documentInfoRef = useRef<HTMLSpanElement | null>(null);
+  const sourceListRef = useRef<HTMLDivElement | null>(null);
+  const referenceSessionPopoverRef = useRef<HTMLDivElement | null>(null);
+  const referenceSessionPopoverWidth = Math.min(280, Math.max(220, window.innerWidth - 32));
+  const referenceSessionPopoverLeft = openReferencedDocument
+    ? Math.min(
+        Math.max(16, openReferencedDocument.rect.right - referenceSessionPopoverWidth),
+        window.innerWidth - referenceSessionPopoverWidth - 16
+      )
+    : 16;
+  const referenceSessionPopoverTop = openReferencedDocument
+    ? openReferencedDocument.rect.bottom + 10
+    : 0;
+
   const visibleDocuments = useMemo(() => {
     const keyword = documentQuery.trim().toLowerCase();
     const sorted = props.documents
@@ -104,6 +183,40 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
         document.status.toLowerCase().includes(keyword)
     );
   }, [documentQuery, props.documents]);
+
+  const referencedDocuments = useMemo(
+    () => buildReferencedDocuments(props.sessions, props.latestSources),
+    [props.latestSources, props.sessions]
+  );
+
+  useEffect(() => {
+    if (!openReferencedDocument) return;
+    if (referencedDocuments.some((document) => document.fileName === openReferencedDocument.fileName)) return;
+    setOpenReferencedDocument(null);
+  }, [openReferencedDocument, referencedDocuments]);
+
+  useEffect(() => {
+    if (!openReferencedDocument) return;
+
+    const closeOnOutsideInteraction = (event: PointerEvent | FocusEvent) => {
+      const target = event.target as Node;
+      if (!sourceListRef.current?.contains(target) && !referenceSessionPopoverRef.current?.contains(target)) {
+        setOpenReferencedDocument(null);
+      }
+    };
+    const closeOnViewportChange = () => setOpenReferencedDocument(null);
+
+    document.addEventListener("pointerdown", closeOnOutsideInteraction);
+    document.addEventListener("focusin", closeOnOutsideInteraction);
+    window.addEventListener("resize", closeOnViewportChange);
+    window.addEventListener("scroll", closeOnViewportChange, true);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideInteraction);
+      document.removeEventListener("focusin", closeOnOutsideInteraction);
+      window.removeEventListener("resize", closeOnViewportChange);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
+    };
+  }, [openReferencedDocument]);
 
   useEffect(() => {
     if (!documentInfoOpen) return;
@@ -166,9 +279,7 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
                 </span>
               </button>
               {documentInfoOpen ? (
-                <span style={documentInfoTipStyle}>
-                  上传相同名称的文档，以最新上传的文档信息为准
-                </span>
+                <span style={documentInfoTipStyle}>上传相同名称的文档，以最新上传的文档信息为准</span>
               ) : null}
             </span>
           </span>
@@ -232,27 +343,62 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
       <section className="knowledge-card">
         <div className="panel-header">
           <span>最近引用</span>
-          <span>{props.latestSources.length}</span>
         </div>
-        <div className="source-list">
-          {props.latestSources.length === 0 ? (
-            <div className="empty-tile compact">发送问题后，这里会显示本轮回答的来源。</div>
+        <div className="source-list" ref={sourceListRef}>
+          {referencedDocuments.length === 0 ? (
+            <div className="empty-tile compact">发送问题后，这里会显示被引用次数最多的文档。</div>
           ) : (
-            props.latestSources.map((source) => (
-              <a
-                key={`${source.fileName}-${source.url}`}
-                className="source-card"
-                href={source.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <strong>{source.fileName}</strong>
-                <span>{source.url}</span>
-                {source.preview ? <p>{source.preview}</p> : null}
-              </a>
+            referencedDocuments.map((source) => (
+              <article key={source.fileName} className="source-card referenced-document-card">
+                <div className="referenced-document-title-row">
+                  <strong>{source.fileName}</strong>
+                  <div className="reference-count-wrap">
+                    <button
+                      className="reference-count-button"
+                      type="button"
+                      onClick={(event) =>
+                        setOpenReferencedDocument((document) =>
+                          document?.fileName === source.fileName
+                            ? null
+                            : {
+                                fileName: source.fileName,
+                                rect: event.currentTarget.getBoundingClientRect(),
+                                sessions: source.sessions
+                              }
+                        )
+                      }
+                    >
+                      被引用 {source.count} 次
+                    </button>
+                  </div>
+                </div>
+              </article>
             ))
           )}
         </div>
+        {openReferencedDocument
+          ? createPortal(
+              <div
+                ref={referenceSessionPopoverRef}
+                className="reference-session-popover"
+                role="dialog"
+                aria-label="引用此文档的会话列表"
+                style={{
+                  left: referenceSessionPopoverLeft,
+                  top: referenceSessionPopoverTop,
+                  width: referenceSessionPopoverWidth
+                }}
+              >
+                {openReferencedDocument.sessions.map((session) => (
+                  <div key={session.sessionId} className="reference-session-row">
+                    <span>{session.title}</span>
+                    <strong>{session.count} 次</strong>
+                  </div>
+                ))}
+              </div>,
+              document.body
+            )
+          : null}
       </section>
     </aside>
   );

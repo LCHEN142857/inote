@@ -595,6 +595,74 @@ a {
   white-space: nowrap;
 }
 
+.referenced-document-card {
+  position: relative;
+  display: block;
+}
+
+.referenced-document-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reference-count-wrap {
+  position: relative;
+  flex: none;
+  width: fit-content;
+}
+
+.reference-count-button {
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(247, 247, 248, 0.96);
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.reference-count-button:hover {
+  color: var(--text-main);
+  background: #ececef;
+}
+
+.reference-session-popover {
+  position: fixed;
+  z-index: 80;
+  width: 240px;
+  padding: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+}
+
+.reference-session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 6px;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.reference-session-row + .reference-session-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+.reference-session-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reference-session-row strong {
+  flex: none;
+  color: var(--text-main);
+  font-size: 13px;
+}
+
 .pin-badge {
   flex: none;
   padding: 4px 8px;
