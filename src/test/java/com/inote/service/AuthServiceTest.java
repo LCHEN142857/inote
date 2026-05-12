@@ -8,7 +8,6 @@ import com.inote.repository.UserRepository;
 import com.inote.security.CurrentUserService;
 import com.inote.security.UnauthorizedException;
 import com.inote.support.TestDataFactory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -51,14 +50,11 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-    @BeforeEach
-    void setUp() {
-        when(captchaImageRenderer.renderAsDataUri(any(String.class))).thenReturn("data:image/png;base64,ZmFrZS1pbWFnZQ==");
-    }
-
     // 验证验证码生成会返回四位代码和图片。
     @Test
     void generateCaptchaProducesFourCharacterCodeAndImage() throws Exception {
+        when(captchaImageRenderer.renderAsDataUri(any(String.class))).thenReturn("data:image/png;base64,ZmFrZS1pbWFnZQ==");
+
         AuthCaptchaResponse response = authService.generateCaptcha();
 
         assertThat(response.getCaptchaId()).isNotBlank();
@@ -69,6 +65,8 @@ class AuthServiceTest {
     // 验证新用户登录会自动注册并返回认证信息。
     @Test
     void loginOrRegisterRegistersNewUserWhenUsernameDoesNotExist() throws Exception {
+        when(captchaImageRenderer.renderAsDataUri(any(String.class))).thenReturn("data:image/png;base64,ZmFrZS1pbWFnZQ==");
+
         AuthCaptchaResponse captcha = authService.generateCaptcha();
         String captchaCode = readCaptchaCode(captcha.getCaptchaId());
         when(userRepository.findByUsername("tester")).thenReturn(Optional.empty());
@@ -95,6 +93,8 @@ class AuthServiceTest {
     // 验证密码不匹配时登录会被拒绝。
     @Test
     void loginOrRegisterThrowsUnauthorizedWhenPasswordDoesNotMatch() throws Exception {
+        when(captchaImageRenderer.renderAsDataUri(any(String.class))).thenReturn("data:image/png;base64,ZmFrZS1pbWFnZQ==");
+
         AuthCaptchaResponse captcha = authService.generateCaptcha();
         String captchaCode = readCaptchaCode(captcha.getCaptchaId());
         User existingUser = TestDataFactory.user("user-1", "tester", "token-1");

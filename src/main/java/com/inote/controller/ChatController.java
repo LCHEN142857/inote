@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -40,6 +41,12 @@ public class ChatController {
     public ResponseEntity<InoteResponse> query(@Valid @RequestBody ChatRequest request) {
         log.info("Received chat query, sessionId={}", request.getSessionId());
         return ResponseEntity.ok(chatService.query(request));
+    }
+
+    @PostMapping("/query/stream")
+    public SseEmitter streamQuery(@Valid @RequestBody ChatRequest request) {
+        log.info("Received streaming chat query, sessionId={}", request.getSessionId());
+        return chatService.streamQuery(request);
     }
 
     @GetMapping("/models")

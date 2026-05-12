@@ -142,6 +142,7 @@ export function KnowledgePanel(props: KnowledgePanelProps) {
               >
                 <strong>{source.fileName}</strong>
                 <span>{source.url}</span>
+                {source.preview ? <p>{source.preview}</p> : null}
               </a>
             ))
           )}

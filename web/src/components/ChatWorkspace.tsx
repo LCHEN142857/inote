@@ -36,8 +36,15 @@ function MessageSources(props: { sources: SourceReference[] }) {
   return (
     <div className="inline-sources">
       {props.sources.map((source) => (
-        <a key={`${source.fileName}-${source.url}`} href={source.url} target="_blank" rel="noreferrer">
-          {source.fileName}
+        <a
+          key={`${source.fileName}-${source.url}-${source.preview ?? ""}`}
+          href={source.url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-source-card"
+        >
+          <strong>{source.fileName}</strong>
+          {source.preview ? <span>{source.preview}</span> : null}
         </a>
       ))}
     </div>

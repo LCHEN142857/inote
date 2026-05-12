@@ -59,18 +59,18 @@ ai:
     base-url: https://api.moonshot.cn/v1
 
 rag:
-  query-rewrite-enabled: false
-  multi-query-enabled: false
+  query-rewrite-enabled: true
+  multi-query-enabled: true
   max-sub-queries: 3
-  hybrid-search-enabled: false
-  vector-top-k: 10
-  bm25-top-k: 10
-  similarity-threshold: 0.5
+  hybrid-search-enabled: true
+  vector-top-k: 12
+  bm25-top-k: 8
+  similarity-threshold: 0.35
   rrf-k: 60.0
   rerank-enabled: false
   rerank-model: gte-rerank
-  rerank-top-n: 3
-  final-top-k: 3
+  rerank-top-n: 5
+  final-top-k: 5
 
 app:
   chat:

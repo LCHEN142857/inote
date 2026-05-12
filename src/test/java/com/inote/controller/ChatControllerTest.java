@@ -2,6 +2,7 @@ package com.inote.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inote.model.dto.ChatMessageResponse;
+import com.inote.model.dto.ChatModelCatalogResponse;
 import com.inote.model.dto.ChatRequest;
 import com.inote.model.dto.ChatSessionCreateRequest;
 import com.inote.model.dto.ChatSessionResponse;
@@ -10,7 +11,10 @@ import com.inote.model.dto.ChatSessionUpdateRequest;
 import com.inote.model.dto.InoteResponse;
 import com.inote.model.dto.SourceReference;
 import com.inote.repository.UserRepository;
+import com.inote.security.ReplayProtectionService;
+import com.inote.security.RequestRateLimitService;
 import com.inote.security.UnauthorizedException;
+import com.inote.service.ChatModelSelectionService;
 import com.inote.service.ChatService;
 import com.inote.service.ChatSessionService;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +59,15 @@ class ChatControllerTest {
 
     @MockBean
     private ChatSessionService chatSessionService;
+
+    @MockBean
+    private ChatModelSelectionService chatModelSelectionService;
+
+    @MockBean
+    private ReplayProtectionService replayProtectionService;
+
+    @MockBean
+    private RequestRateLimitService requestRateLimitService;
 
     @MockBean
     private UserRepository userRepository;
@@ -102,6 +116,33 @@ class ChatControllerTest {
                                 "question", "What is inote?"))))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error").value("Unexpected server error. Please try again later."));
+    }
+
+    // 验证流式提问接口会返回 SSE emitter。
+    @Test
+    void streamQueryReturnsEmitterWhenRequestIsValid() throws Exception {
+        when(chatService.streamQuery(any(ChatRequest.class))).thenReturn(new SseEmitter());
+
+        mockMvc.perform(post("/api/v1/chat/query/stream")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "sessionId", "session-1",
+                                "question", "What is inote?"))))
+                .andExpect(status().isOk());
+    }
+
+    // 验证模型列表接口返回默认模型和可选模型。
+    @Test
+    void modelsReturnsConfiguredCatalog() throws Exception {
+        when(chatModelSelectionService.catalog()).thenReturn(ChatModelCatalogResponse.builder()
+                .defaultModel("qwen")
+                .availableModels(List.of("qwen", "glm"))
+                .build());
+
+        mockMvc.perform(get("/api/v1/chat/models"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.defaultModel").value("qwen"))
+                .andExpect(jsonPath("$.availableModels[1]").value("glm"));
     }
 
     // 验证新建会话接口返回创建结果。

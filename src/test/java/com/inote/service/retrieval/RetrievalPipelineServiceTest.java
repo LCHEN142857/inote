@@ -94,9 +94,9 @@ class RetrievalPipelineServiceTest {
         // 断言当前结果符合测试预期。
         assertThat(result.documents()).hasSize(2);
         // 校验依赖调用是否符合预期。
-        verify(queryRewriteService, never()).rewrite("question");
+        verify(queryRewriteService, never()).rewrite("question", null);
         // 校验依赖调用是否符合预期。
-        verify(queryDecompositionService, never()).decompose("question");
+        verify(queryDecompositionService, never()).decompose("question", null);
         // 校验依赖调用是否符合预期。
         verify(rerankService, never()).rerank(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyInt());
     }
@@ -117,9 +117,9 @@ class RetrievalPipelineServiceTest {
         // 开始构建unique文档对象。
         Document uniqueDocument = Document.builder().id("unique-id").text("unique").metadata(Map.of("file_name", "unique.txt")).build();
         // 为当前测试场景预设模拟对象行为。
-        when(queryRewriteService.rewrite("question")).thenReturn("rewritten question");
+        when(queryRewriteService.rewrite("question", null)).thenReturn("rewritten question");
         // 为当前测试场景预设模拟对象行为。
-        when(queryDecompositionService.decompose("rewritten question")).thenReturn(List.of("query-a", "query-b"));
+        when(queryDecompositionService.decompose("rewritten question", null)).thenReturn(List.of("query-a", "query-b"));
         // 为当前测试场景预设模拟对象行为。
         when(hybridRetrievalService.retrieve("query-a")).thenReturn(List.of(sharedDocument));
         // 为当前测试场景预设模拟对象行为。

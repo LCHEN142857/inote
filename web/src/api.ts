@@ -4,6 +4,7 @@ import type {
   ChatModelCatalog,
   ChatSession,
   ChatSessionSummary,
+  ChatStreamHandlers,
   DocumentStatus,
   DocumentUploadResponse,
   InoteResponse,
@@ -44,6 +45,59 @@ async function readErrorBody(response: Response) {
     return (await response.json()) as Record<string, unknown>;
   } catch {
     return { error: await response.text() };
+  }
+}
+
+async function readStreamBody(response: Response, handlers: ChatStreamHandlers) {
+  if (!response.body) {
+    throw new ApiError("Streaming response is not available", response.status, {});
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  const dispatchEvent = (rawEvent: string) => {
+    const lines = rawEvent.split("\n");
+    let eventName = "message";
+    const dataLines: string[] = [];
+
+    for (const line of lines) {
+      if (line.startsWith("event:")) {
+        eventName = line.slice(6).trim();
+      } else if (line.startsWith("data:")) {
+        dataLines.push(line.slice(5).trimStart());
+      }
+    }
+
+    if (!dataLines.length) return;
+    const data = dataLines.join("\n");
+    if (eventName === "delta") {
+      handlers.onDelta?.(data);
+      return;
+    }
+
+    const responseData = JSON.parse(data) as InoteResponse;
+    if (eventName === "metadata") {
+      handlers.onMetadata?.(responseData);
+    } else if (eventName === "done") {
+      handlers.onDone?.(responseData);
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split("\n\n");
+    buffer = events.pop() ?? "";
+    events.forEach(dispatchEvent);
+  }
+
+  buffer += decoder.decode();
+  if (buffer.trim()) {
+    dispatchEvent(buffer);
   }
 }
 
@@ -126,6 +180,29 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ sessionId, question, model })
     }),
+  queryStream: async (
+    sessionId: string | undefined,
+    question: string,
+    model: string,
+    handlers: ChatStreamHandlers
+  ) => {
+    const response = await fetch("/api/v1/chat/query/stream", {
+      method: "POST",
+      headers: buildHeaders(),
+      body: JSON.stringify({ sessionId, question, model })
+    });
+
+    if (!response.ok) {
+      const body = await readErrorBody(response);
+      const message = typeof body.error === "string" ? body.error : typeof body.message === "string" ? body.message : "Request failed";
+      if (response.status === 401 && authToken) {
+        unauthorizedHandler?.();
+      }
+      throw new ApiError(message, response.status, body);
+    }
+
+    await readStreamBody(response, handlers);
+  },
   listDocuments: () => request<DocumentStatus[]>("/api/v1/documents"),
   deleteDocument: (documentId: string) =>
     request<void>(`/api/v1/documents/delete/${documentId}`, {

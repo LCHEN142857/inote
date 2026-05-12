@@ -1,6 +1,13 @@
 export interface SourceReference {
   fileName: string;
   url: string;
+  preview?: string;
+}
+
+export interface ChatStreamHandlers {
+  onMetadata?: (response: InoteResponse) => void;
+  onDelta?: (delta: string) => void;
+  onDone?: (response: InoteResponse) => void;
 }
 
 export interface AuthCaptcha {

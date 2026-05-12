@@ -6,8 +6,11 @@ import com.inote.model.dto.AuthLoginRequest;
 import com.inote.model.dto.AuthResponse;
 import com.inote.model.dto.ResetPasswordRequest;
 import com.inote.repository.UserRepository;
+import com.inote.security.ReplayProtectionService;
+import com.inote.security.RequestRateLimitService;
 import com.inote.security.UnauthorizedException;
 import com.inote.service.AuthService;
+import com.inote.service.UserSettingsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -41,6 +44,15 @@ class AuthControllerTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private UserSettingsService userSettingsService;
+
+    @MockBean
+    private ReplayProtectionService replayProtectionService;
+
+    @MockBean
+    private RequestRateLimitService requestRateLimitService;
 
     @MockBean
     private UserRepository userRepository;

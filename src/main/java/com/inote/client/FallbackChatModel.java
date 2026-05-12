@@ -11,6 +11,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -84,6 +85,26 @@ public class FallbackChatModel implements ChatModel {
 
             throw new RuntimeException("Primary model failed and no fallback available", e);
         }
+    }
+
+    public Flux<ChatResponse> streamWithFallback(ChatModel primaryModel, Prompt prompt) {
+        log.info("Trying primary model stream [{}]...", effectiveModel(prompt));
+        return primaryModel.stream(prompt)
+                .doOnComplete(() -> log.info("Primary model stream succeeded"))
+                .onErrorResume(e -> {
+                    log.warn("Primary model stream failed: {}, trying fallback model...", e.getMessage());
+
+                    if (fallbackChatModel != null) {
+                        return fallbackChatModel.stream(withoutModel(prompt))
+                                .doOnComplete(() -> log.info("Fallback model stream succeeded"))
+                                .onErrorMap(fallbackException -> {
+                                    log.error("Fallback model stream also failed: {}", fallbackException.getMessage());
+                                    return new RuntimeException("Both primary and fallback model streams failed", fallbackException);
+                                });
+                    }
+
+                    return Flux.error(new RuntimeException("Primary model stream failed and no fallback available", e));
+                });
     }
 
     @Override

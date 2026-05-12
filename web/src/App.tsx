@@ -433,15 +433,60 @@ export default function App() {
       setSelectedSession(optimisticSession);
       setComposer("");
 
-      const response = await api.query(ensuredSessionId, question, selectedModel);
-      const responseSessionId = response.sessionId ?? ensuredSessionId;
-      setSelectedSessionId(responseSessionId);
-      setLatestAnswerMeta({
-        sessionId: responseSessionId,
-        answer: response.answer,
-        sources: response.sources ?? []
+      await api.queryStream(ensuredSessionId, question, selectedModel, {
+        onMetadata: (response) => {
+          setSelectedSessionId(response.sessionId ?? ensuredSessionId);
+          setSelectedSession((current) =>
+            current
+              ? {
+                  ...current,
+                  messages: current.messages.map((message) =>
+                    message.id === optimisticAssistantMessageId
+                      ? { ...message, content: "", sources: response.sources ?? [], pending: true }
+                      : message
+                  )
+                }
+              : current
+          );
+        },
+        onDelta: (delta) => {
+          setSelectedSession((current) =>
+            current
+              ? {
+                  ...current,
+                  messages: current.messages.map((message) =>
+                    message.id === optimisticAssistantMessageId
+                      ? { ...message, content: `${message.content === "generating..." ? "" : message.content}${delta}`, pending: true }
+                      : message
+                  )
+                }
+              : current
+          );
+        },
+        onDone: (response) => {
+          const responseSessionId = response.sessionId ?? ensuredSessionId;
+          setSelectedSessionId(responseSessionId);
+          setLatestAnswerMeta({
+            sessionId: responseSessionId,
+            answer: response.answer,
+            sources: response.sources ?? []
+          });
+          setSelectedSession((current) =>
+            current
+              ? {
+                  ...current,
+                  id: responseSessionId,
+                  messages: current.messages.map((message) =>
+                    message.id === optimisticAssistantMessageId
+                      ? { ...message, content: response.answer, sources: response.sources ?? [], pending: false }
+                      : message
+                  )
+                }
+              : current
+          );
+        }
       });
-      await refreshSessions(responseSessionId);
+      await refreshSessions(ensuredSessionId);
     } catch (queryError) {
       if (isUnauthorizedError(queryError)) return;
       if (queryError instanceof ApiError && queryError.status >= 500 && optimisticSession) {

@@ -18,7 +18,11 @@ import io.milvus.client.MilvusServiceClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -39,6 +43,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -173,10 +178,15 @@ class BackendFlowIntegrationTest {
     void chatQueryPersistsMessagesForAuthenticatedUser() throws Exception {
         // 保存用户对象。
         User user = userRepository.save(TestDataFactory.user("user-1", "tester", "token-1"));
+        user.setAnswerFromReferencesOnly(false);
+        user = userRepository.save(user);
         // 保存会话对象。
         ChatSession session = chatSessionRepository.save(TestDataFactory.session("session-1", user, "New Session"));
         // 为当前测试场景预设模拟对象行为。
-        when(retrievalPipelineService.retrieve("What is the rollout plan?")).thenReturn(new RetrievalResult("What is the rollout plan?", "What is the rollout plan?", List.of()));
+        when(retrievalPipelineService.retrieve("What is the rollout plan?", "qwen3.5-plus-2026-02-15"))
+                .thenReturn(new RetrievalResult("What is the rollout plan?", "What is the rollout plan?", List.of()));
+        when(fallbackChatModel.callWithFallback(isA(ChatModel.class), isA(Prompt.class)))
+                .thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("未匹配到可用参考文档，以下基于通用知识回答：先明确目标和时间线。")))));
         // 发起当前接口的集成测试请求。
         mockMvc.perform(post("/api/v1/chat/query").header("X-Auth-Token", "token-1").contentType(MediaType.APPLICATION_JSON).content("""
                 {
@@ -189,7 +199,7 @@ class BackendFlowIntegrationTest {
                 // 继续校验接口响应结果。
                 .andExpect(jsonPath("$.sessionId").value("session-1"))
                 // 继续校验接口响应结果。
-                .andExpect(jsonPath("$.answer").value("当前文档信息不足，无法回答这个问题。"));
+                .andExpect(jsonPath("$.answer").value("未匹配到可用参考文档，以下基于通用知识回答：先明确目标和时间线。"));
         // 断言当前结果符合测试预期。
         assertThat(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc(session.getId())).hasSize(2);
         // 断言当前结果符合测试预期。

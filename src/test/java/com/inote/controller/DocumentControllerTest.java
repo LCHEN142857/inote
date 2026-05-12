@@ -4,6 +4,8 @@ import com.inote.model.dto.DocumentStatusResponse;
 import com.inote.model.dto.DocumentUploadResponse;
 import com.inote.model.entity.Document;
 import com.inote.repository.UserRepository;
+import com.inote.security.ReplayProtectionService;
+import com.inote.security.RequestRateLimitService;
 import com.inote.security.UnauthorizedException;
 import com.inote.service.DocumentService;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,6 +49,12 @@ class DocumentControllerTest {
 
     @MockBean
     private DocumentService documentService;
+
+    @MockBean
+    private ReplayProtectionService replayProtectionService;
+
+    @MockBean
+    private RequestRateLimitService requestRateLimitService;
 
     @MockBean
     private UserRepository userRepository;

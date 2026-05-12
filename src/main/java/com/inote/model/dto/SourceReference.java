@@ -21,4 +21,6 @@ public class SourceReference {
     private String fileName;
     // 声明url变量，供后续流程使用。
     private String url;
+    // 声明引用片段预览变量，供前端展示匹配到的 chunk 内容。
+    private String preview;
 }

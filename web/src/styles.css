@@ -944,18 +944,29 @@ a {
 }
 
 .inline-sources {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
   margin-top: 14px;
 }
 
-.inline-sources a {
-  padding: 8px 12px;
-  border-radius: 999px;
+.inline-source-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 16px;
   background: #f4f4f5;
   color: #444444;
   font-size: 12px;
+}
+
+.inline-source-card strong {
+  font-weight: 600;
+  color: #222222;
+}
+
+.inline-source-card span {
+  color: var(--text-soft);
+  line-height: 1.5;
 }
 
 .composer-panel {
@@ -1158,6 +1169,13 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.source-card p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .source-card:hover,
