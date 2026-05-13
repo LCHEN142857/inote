@@ -15,4 +15,6 @@ public interface DocumentRepository extends JpaRepository<Document, String> {
     List<Document> findAllByOwnerIdAndFileNameOrderByUpdatedAtDesc(String ownerId, String fileName);
 
     List<Document> findAllByIdInAndOwnerId(List<String> ids, String ownerId);
+
+    List<Document> findAllByIdInAndOwnerIdAndActive(List<String> ids, String ownerId, Boolean active);
 }

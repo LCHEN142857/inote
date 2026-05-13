@@ -31,27 +31,33 @@ public class RetrievalPipelineService {
         log.info("Starting retrieval pipeline for query: {}", originalQuery);
 
         String searchQuery = originalQuery;
-        if (ragProperties.isQueryRewriteEnabled()) {
-            searchQuery = queryRewriteService.rewrite(originalQuery, modelName);
-        }
-
-        List<String> queries;
-        if (ragProperties.isMultiQueryEnabled()) {
-            queries = queryDecompositionService.decompose(searchQuery, modelName);
-        } else {
-            queries = List.of(searchQuery);
-        }
+        // if (ragProperties.isQueryRewriteEnabled()) {
+        //     searchQuery = queryRewriteService.rewrite(originalQuery, modelName);
+        // }
+        //
+        // List<String> queries;
+        // if (ragProperties.isMultiQueryEnabled()) {
+        //     queries = queryDecompositionService.decompose(searchQuery, modelName);
+        // } else {
+        //     queries = List.of(searchQuery);
+        // }
 
         List<Document> allCandidates = new ArrayList<>();
         Set<String> seenIds = new HashSet<>();
-        for (String query : queries) {
-            List<Document> results = hybridRetrievalService.retrieve(query);
-            for (Document doc : results) {
-                if (seenIds.add(doc.getId())) {
-                    allCandidates.add(doc);
-                }
+        List<Document> results = hybridRetrievalService.retrieve(searchQuery);
+        for (Document doc : results) {
+            if (seenIds.add(doc.getId())) {
+                allCandidates.add(doc);
             }
         }
+        // for (String query : queries) {
+        //     List<Document> results = hybridRetrievalService.retrieve(query);
+        //     for (Document doc : results) {
+        //         if (seenIds.add(doc.getId())) {
+        //             allCandidates.add(doc);
+        //         }
+        //     }
+        // }
 
         List<Document> finalDocs;
         if (ragProperties.isRerankEnabled() && allCandidates.size() > 1) {

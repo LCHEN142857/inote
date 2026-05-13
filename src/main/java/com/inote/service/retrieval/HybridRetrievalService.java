@@ -10,11 +10,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -31,9 +34,10 @@ public class HybridRetrievalService {
     public List<Document> retrieve(String query) {
         int vectorTopK = ragProperties.getVectorTopK();
         String ownerId = currentUserService.getCurrentUser().getId();
+        Optional<String> requestedDocumentId = resolveRequestedDocumentId(ownerId, query);
 
         List<Document> vectorResults = embeddingService.searchSimilarDocuments(
-                query, vectorTopK, ragProperties.getSimilarityThreshold(), ownerId);
+                query, vectorTopK, ragProperties.getSimilarityThreshold(), ownerId, requestedDocumentId.orElse(null));
         log.debug("Vector search returned {} results", vectorResults.size());
 
         if (!ragProperties.isHybridSearchEnabled()) {
@@ -44,7 +48,7 @@ public class HybridRetrievalService {
         int bm25TopK = ragProperties.getBm25TopK();
         List<BM25SearchService.BM25Result> bm25Results;
         try {
-            bm25Results = bm25SearchService.search(query, bm25TopK, ownerId);
+            bm25Results = bm25SearchService.search(query, bm25TopK, ownerId, requestedDocumentId.orElse(null));
             log.debug("BM25 search returned {} results", bm25Results.size());
         } catch (Exception e) {
             log.warn("BM25 search failed, using vector-only results: {}", e.getMessage());
@@ -57,6 +61,19 @@ public class HybridRetrievalService {
                 filterActiveVectorResults(vectorResults, activeDocumentIds),
                 filterActiveBm25Results(bm25Results, activeDocumentIds)
         );
+    }
+
+    private Optional<String> resolveRequestedDocumentId(String ownerId, String query) {
+        String normalizedQuery = normalize(query);
+        if (!hasText(normalizedQuery)) {
+            return Optional.empty();
+        }
+
+        return documentRepository.findAllByOwnerIdOrderByUpdatedAtDesc(ownerId).stream()
+                .filter(this::isActiveCompletedVersion)
+                .filter(document -> normalizedQuery.contains(normalize(document.getFileName())))
+                .max(Comparator.comparingInt(document -> normalize(document.getFileName()).length()))
+                .map(com.inote.model.entity.Document::getId);
     }
 
     private Set<String> collectCandidateDocumentIds(
@@ -96,8 +113,7 @@ public class HybridRetrievalService {
             return Set.of();
         }
 
-        return documentRepository.findAllByIdInAndOwnerId(List.copyOf(candidateDocumentIds), ownerId).stream()
-                .filter(this::isActiveVersion)
+        return documentRepository.findAllByIdInAndOwnerIdAndActive(List.copyOf(candidateDocumentIds), ownerId, Boolean.TRUE).stream()
                 .map(com.inote.model.entity.Document::getId)
                 .collect(java.util.stream.Collectors.toSet());
     }
@@ -124,6 +140,17 @@ public class HybridRetrievalService {
 
     private boolean isActiveVersion(com.inote.model.entity.Document document) {
         return !Boolean.FALSE.equals(document.getActive());
+    }
+
+    private boolean isActiveCompletedVersion(com.inote.model.entity.Document document) {
+        return isActiveVersion(document) && "COMPLETED".equalsIgnoreCase(document.getStatus());
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
     }
 
     private List<Document> fuseWithRRF(

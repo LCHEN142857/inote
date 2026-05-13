@@ -10,6 +10,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,15 +52,19 @@ public class EmbeddingService {
     }
 
     public List<Document> searchSimilarDocuments(String query, int topK, double similarityThreshold, String ownerId) {
-        log.debug("Searching similar documents for query: {}, topK: {}, threshold: {}, ownerId: {}",
-                query, topK, similarityThreshold, ownerId);
+        return searchSimilarDocuments(query, topK, similarityThreshold, ownerId, null);
+    }
 
-        SearchRequest searchRequest = buildSearchRequest(query, topK, similarityThreshold, ownerId);
+    public List<Document> searchSimilarDocuments(String query, int topK, double similarityThreshold, String ownerId, String documentId) {
+        log.debug("Searching similar documents for query: {}, topK: {}, threshold: {}, ownerId: {}, documentId: {}",
+                query, topK, similarityThreshold, ownerId, documentId);
+
+        SearchRequest searchRequest = buildSearchRequest(query, topK, similarityThreshold, ownerId, documentId);
         List<Document> results = vectorStore.similaritySearch(searchRequest);
 
         if (results.isEmpty() && similarityThreshold > 0.0) {
             log.debug("No results with threshold {}, retrying with threshold 0.0", similarityThreshold);
-            results = vectorStore.similaritySearch(buildSearchRequest(query, topK, 0.0, ownerId));
+            results = vectorStore.similaritySearch(buildSearchRequest(query, topK, 0.0, ownerId, documentId));
         }
 
         log.debug("Found {} similar documents", results.size());
@@ -67,6 +72,10 @@ public class EmbeddingService {
     }
 
     private SearchRequest buildSearchRequest(String query, int topK, double similarityThreshold, String ownerId) {
+        return buildSearchRequest(query, topK, similarityThreshold, ownerId, null);
+    }
+
+    private SearchRequest buildSearchRequest(String query, int topK, double similarityThreshold, String ownerId, String documentId) {
         SearchRequest.Builder builder = SearchRequest.builder()
                 .query(query)
                 .topK(topK);
@@ -75,8 +84,15 @@ public class EmbeddingService {
             builder.similarityThreshold(similarityThreshold);
         }
 
+        List<String> filters = new ArrayList<>();
         if (StringUtils.hasText(ownerId)) {
-            builder.filterExpression("owner_id == '" + ownerId + "'");
+            filters.add("owner_id == '" + ownerId + "'");
+        }
+        if (StringUtils.hasText(documentId)) {
+            filters.add("document_id == '" + documentId + "'");
+        }
+        if (!filters.isEmpty()) {
+            builder.filterExpression(String.join(" && ", filters));
         }
 
         return builder.build();

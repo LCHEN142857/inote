@@ -53,6 +53,31 @@ class HybridRetrievalServiceTest {
     }
 
     @Test
+    void retrieveRestrictsResultsWhenQueryMentionsUploadedFileName() {
+        Document custChunk = Document.builder()
+                .id("chunk-cust")
+                .text("customer flow content")
+                .metadata(Map.of("document_id", "doc-cust", "file_name", "cust_flow.txt", "owner_id", "user-1"))
+                .build();
+        var custDocument = TestDataFactory.document("doc-cust", TestDataFactory.user("user-1", "tester", "token-1"), "COMPLETED");
+        custDocument.setFileName("cust_flow.txt");
+
+        when(documentRepository.findAllByOwnerIdOrderByUpdatedAtDesc("user-1")).thenReturn(List.of(custDocument));
+        when(embeddingService.searchSimilarDocuments("查看cust_flow.txt文档的内容时", 5, 0.5, "user-1", "doc-cust"))
+                .thenReturn(List.of(custChunk));
+        when(bm25SearchService.search("查看cust_flow.txt文档的内容时", 5, "user-1", "doc-cust"))
+                .thenReturn(List.of());
+        when(documentRepository.findAllByIdInAndOwnerIdAndActive(anyList(), eq("user-1"), eq(Boolean.TRUE)))
+                .thenReturn(List.of(custDocument));
+
+        List<Document> results = hybridRetrievalService.retrieve("查看cust_flow.txt文档的内容时");
+
+        assertThat(results).singleElement()
+                .extracting(doc -> doc.getMetadata().get("document_id"))
+                .isEqualTo("doc-cust");
+    }
+
+    @Test
     void retrieveDropsInactiveDocumentVersionsBeforeFusion() {
         Document activeChunk = Document.builder()
                 .id("chunk-active")
@@ -65,18 +90,17 @@ class HybridRetrievalServiceTest {
                 .metadata(Map.of("document_id", "doc-inactive", "file_name", "inactive.txt", "owner_id", "user-1"))
                 .build();
 
-        when(embeddingService.searchSimilarDocuments("question", 5, 0.5, "user-1"))
+        when(documentRepository.findAllByOwnerIdOrderByUpdatedAtDesc("user-1")).thenReturn(List.of());
+        when(embeddingService.searchSimilarDocuments("question", 5, 0.5, "user-1", null))
                 .thenReturn(List.of(activeChunk, inactiveChunk));
-        when(bm25SearchService.search("question", 5, "user-1"))
+        when(bm25SearchService.search("question", 5, "user-1", null))
                 .thenReturn(List.of(
                         new BM25SearchService.BM25Result("bm25-active", "active bm25", Map.of("document_id", "doc-active"), 1.0),
                         new BM25SearchService.BM25Result("bm25-inactive", "inactive bm25", Map.of("document_id", "doc-inactive"), 0.9)
                 ));
         var activeDocument = TestDataFactory.document("doc-active", TestDataFactory.user("user-1", "tester", "token-1"), "COMPLETED");
-        var inactiveDocument = TestDataFactory.document("doc-inactive", TestDataFactory.user("user-1", "tester", "token-1"), "COMPLETED");
-        inactiveDocument.setActive(Boolean.FALSE);
-        when(documentRepository.findAllByIdInAndOwnerId(anyList(), eq("user-1")))
-                .thenReturn(List.of(activeDocument, inactiveDocument));
+        when(documentRepository.findAllByIdInAndOwnerIdAndActive(anyList(), eq("user-1"), eq(Boolean.TRUE)))
+                .thenReturn(List.of(activeDocument));
 
         List<Document> results = hybridRetrievalService.retrieve("question");
 

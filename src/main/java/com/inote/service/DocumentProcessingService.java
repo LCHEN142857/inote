@@ -75,6 +75,7 @@ public class DocumentProcessingService {
             metadata.put("file_url", fileUrl);
             metadata.put("content_type", document.getContentType());
             metadata.put("owner_id", document.getOwner().getId());
+            metadata.put("active", !Boolean.FALSE.equals(document.getActive()));
 
             // 将切块内容写入 embedding 存储。
             embeddingService.embedAndStore(chunks, metadata);

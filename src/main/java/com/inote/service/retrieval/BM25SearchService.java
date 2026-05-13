@@ -191,10 +191,16 @@ public class BM25SearchService {
      * @return 列表形式的处理结果。
      */
     public List<BM25Result> search(String queryText, int topK, String ownerId) {
+        return search(queryText, topK, ownerId, null);
+    }
+
+    public List<BM25Result> search(String queryText, int topK, String ownerId, String documentId) {
         // 返回 `search` 的处理结果。
         return search(queryText, topK).stream()
                 // 设置filter字段的取值。
                 .filter(result -> ownerId.equals(String.valueOf(result.metadata().get("owner_id"))))
+                .filter(result -> documentId == null || documentId.isBlank()
+                        || documentId.equals(String.valueOf(result.metadata().get("document_id"))))
                 // 设置tolist字段的取值。
                 .toList();
     }
