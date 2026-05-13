@@ -62,11 +62,6 @@ public class EmbeddingService {
         SearchRequest searchRequest = buildSearchRequest(query, topK, similarityThreshold, ownerId, documentId);
         List<Document> results = vectorStore.similaritySearch(searchRequest);
 
-        if (results.isEmpty() && similarityThreshold > 0.0) {
-            log.debug("No results with threshold {}, retrying with threshold 0.0", similarityThreshold);
-            results = vectorStore.similaritySearch(buildSearchRequest(query, topK, 0.0, ownerId, documentId));
-        }
-
         log.debug("Found {} similar documents", results.size());
         return results;
     }
