@@ -68,9 +68,9 @@ class ChatServiceTest {
     @Test
     void queryReturnsFallbackAnswerWithoutPersistingWhenSessionIsMissing() {
         ChatRequest request = ChatRequest.builder().question("What is inote?").build();
-        givenResolvedModel(null, "qwen3.5-plus-2026-02-15");
+        givenResolvedModel(null, "kimi-k2.6");
         when(userSettingsService.answerFromReferencesOnly()).thenReturn(true);
-        when(retrievalPipelineService.retrieve("What is inote?", "qwen3.5-plus-2026-02-15"))
+        when(retrievalPipelineService.retrieve("What is inote?", "kimi-k2.6"))
                 .thenReturn(new RetrievalResult("What is inote?", "What is inote?", List.of()));
 
         var response = chatService.query(request);
@@ -89,11 +89,11 @@ class ChatServiceTest {
                 .sessionId("session-1")
                 .question("How should we start this migration?")
                 .build();
-        givenResolvedModel(null, "qwen3.5-plus-2026-02-15");
+        givenResolvedModel(null, "kimi-k2.6");
         when(userSettingsService.answerFromReferencesOnly()).thenReturn(true);
         when(chatSessionService.getSessionEntity("session-1")).thenReturn(session);
         when(chatMessageRepository.findBySessionIdOrderByCreatedAtAsc("session-1")).thenReturn(List.of());
-        when(retrievalPipelineService.retrieve("How should we start this migration?", "qwen3.5-plus-2026-02-15"))
+        when(retrievalPipelineService.retrieve("How should we start this migration?", "kimi-k2.6"))
                 .thenReturn(new RetrievalResult("How should we start this migration?", "How should we start this migration?", List.of()));
 
         var response = chatService.query(request);
@@ -137,8 +137,8 @@ class ChatServiceTest {
     void queryReturnsServiceUnavailableMessageWhenModelThrowsException() {
         Document document = new Document("knowledge chunk", Map.of("file_name", "doc-1.txt", "file_url", "/files/1"));
         ChatRequest request = ChatRequest.builder().question("Answer from docs").build();
-        givenSelectedModel(null, "qwen3.5-plus-2026-02-15");
-        when(retrievalPipelineService.retrieve("Answer from docs", "qwen3.5-plus-2026-02-15"))
+        givenSelectedModel(null, "kimi-k2.6");
+        when(retrievalPipelineService.retrieve("Answer from docs", "kimi-k2.6"))
                 .thenReturn(new RetrievalResult("Answer from docs", "Answer from docs", List.of(document)));
         doThrow(new RuntimeException("boom"))
                 .when(fallbackChatModel)

@@ -129,7 +129,7 @@ public class FallbackChatModel implements ChatModel {
     private String effectiveModel(Prompt prompt) {
         ChatOptions options = prompt.getOptions();
         if (options == null || options.getModel() == null || options.getModel().isBlank()) {
-            return "deepseek-v4-pro";
+            return "kimi-k2.6";
         }
         return options.getModel();
     }

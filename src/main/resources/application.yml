@@ -34,9 +34,9 @@ spring:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
       chat:
         options:
-          model: ${app.chat.default-model:qwen3.5-plus-2026-02-15}
+          model: ${app.chat.default-model:kimi-k2.6}
           temperature: 0.7
-          max-tokens: 2000
+          max-tokens: 3000
       embedding:
         options:
           model: text-embedding-v2
@@ -74,9 +74,8 @@ rag:
 
 app:
   chat:
-    default-model: qwen3.5-plus-2026-02-15
+    default-model: kimi-k2.6
     available-models:
-      - qwen3.5-plus-2026-02-15
       - glm-5
       - qwen3.5-397b-a17b
       - qwen3.5-122b-a10b

@@ -183,7 +183,7 @@ class BackendFlowIntegrationTest {
         // 保存会话对象。
         ChatSession session = chatSessionRepository.save(TestDataFactory.session("session-1", user, "New Session"));
         // 为当前测试场景预设模拟对象行为。
-        when(retrievalPipelineService.retrieve("What is the rollout plan?", "qwen3.5-plus-2026-02-15"))
+        when(retrievalPipelineService.retrieve("What is the rollout plan?", "kimi-k2.6"))
                 .thenReturn(new RetrievalResult("What is the rollout plan?", "What is the rollout plan?", List.of()));
         when(fallbackChatModel.callWithFallback(isA(ChatModel.class), isA(Prompt.class)))
                 .thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("未匹配到可用参考文档，以下基于通用知识回答：先明确目标和时间线。")))));
